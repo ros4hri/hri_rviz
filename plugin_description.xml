@@ -1,0 +1,10 @@
+<library path="lib/libhri_rviz">
+  <class name="hri_rviz/HRI"
+         type="rviz::HriBodiesDisplay"
+         base_class_type="rviz::Display">
+    <description>
+        A panel display to show HRI-related data (faces, skeletons...)
+    </description>
+  </class>
+</library>
+

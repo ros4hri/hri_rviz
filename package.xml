@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>hri_rviz</name>
+  <version>0.1.0</version>
+  <description>The hri_rviz package</description>
+
+  <maintainer email="skadge@todo.todo">skadge</maintainer>
+
+
+  <license>TODO</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>roscpp</depend>
+
+  <build_depend>qtbase5-dev</build_depend>
+  <build_depend>rviz</build_depend>
+
+  <exec_depend>libqt5-core</exec_depend>
+  <exec_depend>libqt5-gui</exec_depend>
+  <exec_depend>libqt5-widgets</exec_depend>
+  <exec_depend>rviz</exec_depend>
+
+  <export>
+      <rviz plugin="${prefix}/plugin_description.xml"/>
+  </export>
+
+</package>
