@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2008, Willow Garage, Inc.
- * All rights reserved.
+ * Copyright (c) 2021, PAL Robotics
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -27,28 +27,24 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef RVIZ_ROBOT_MODEL_DISPLAY_H
-#define RVIZ_ROBOT_MODEL_DISPLAY_H
-
-#include <rviz/display.h>
+#ifndef RVIZ_HRI_BODIES_DISPLAY_H
+#define RVIZ_HRI_BODIES_DISPLAY_H
 
 #include <OGRE/OgreVector3.h>
+#include <rviz/display.h>
 
 #include <map>
 
-namespace Ogre
-{
+namespace Ogre {
 class Entity;
 class SceneNode;
-} // namespace Ogre
+}  // namespace Ogre
 
-namespace rviz
-{
+namespace rviz {
 class Axes;
 }
 
-namespace rviz
-{
+namespace rviz {
 class FloatProperty;
 class Property;
 class Robot;
@@ -56,60 +52,51 @@ class StringProperty;
 
 /**
  * \class HriBodiesDisplay
- * \brief Uses a robot xml description to display the pieces of a robot at the transforms broadcast by
- * rosTF
+ * \brief Uses a robot xml description to display the pieces of a robot at the
+ * transforms broadcast by rosTF
  */
-class HriBodiesDisplay : public Display
-{
-  Q_OBJECT
-public:
-  HriBodiesDisplay();
-  ~HriBodiesDisplay() override;
+class HriBodiesDisplay : public Display {
+    Q_OBJECT
+   public:
+    HriBodiesDisplay();
+    ~HriBodiesDisplay() override;
 
-  // Overrides from Display
-  void onInitialize() override;
-  void update(float wall_dt, float ros_dt) override;
-  void fixedFrameChanged() override;
-  void reset() override;
-  using Display::load;
+    // Overrides from Display
+    void onInitialize() override;
+    void update(float wall_dt, float ros_dt) override;
+    void fixedFrameChanged() override;
+    void reset() override;
+    using Display::load;
 
-  void clear();
+    void clear();
 
-private Q_SLOTS:
-  void updateVisualVisible();
-  void updateCollisionVisible();
-  void updateTfPrefix();
-  void updateAlpha();
-  void updateRobotDescription();
+   private Q_SLOTS:
+    void updateAlpha();
 
-protected:
-  /** @brief Loads a URDF from the ros-param named by our
-   * "Robot Description" property, iterates through the links, and
-   * loads any necessary models. */
-  virtual void load();
+   protected:
+    /** @brief Loads a URDF from the ros-param named by our
+     * "Robot Description" property, iterates through the links, and
+     * loads any necessary models. */
+    virtual void load();
 
-  // overrides from Display
-  void onEnable() override;
-  void onDisable() override;
+    // overrides from Display
+    void onEnable() override;
+    void onDisable() override;
 
-  Robot* robot_; ///< Handles actually drawing the robot
+    Robot* robot_;  ///< Handles actually drawing the robot
 
-  bool has_new_transforms_; ///< Callback sets this to tell our update function it needs to update the
-                            /// transforms
+    bool has_new_transforms_;  ///< Callback sets this to tell our update
+                               ///< function it needs to update the
+                               /// transforms
 
-  float time_since_last_transform_;
+    float time_since_last_transform_;
 
-  std::string robot_description_;
+    std::string robot_description_;
 
-  Property* visual_enabled_property_;
-  Property* collision_enabled_property_;
-  FloatProperty* update_rate_property_;
-  StringProperty* robot_description_property_;
-  FloatProperty* alpha_property_;
-  StringProperty* tf_prefix_property_;
+    FloatProperty* alpha_property_;
 };
 
-} // namespace rviz
+}  // namespace rviz
 
 #endif
 
