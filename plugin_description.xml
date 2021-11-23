@@ -1,5 +1,5 @@
 <library path="lib/libhri_rviz">
-  <class name="hri_rviz/HRI"
+  <class name="HRI/Skeletons 3D"
          type="rviz::HriBodiesDisplay"
          base_class_type="rviz::Display">
     <description>
