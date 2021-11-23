@@ -42,17 +42,18 @@
 
 #include <QTimer>
 
+using namespace std;
+
 namespace rviz {
 void linkUpdaterStatusFunction(StatusProperty::Level level,
-                               const std::string& link_name,
-                               const std::string& text,
+                               const string& link_name, const string& text,
                                HriBodiesDisplay* display) {
     display->setStatus(level, QString::fromStdString(link_name),
                        QString::fromStdString(text));
 }
 
 HriBodiesDisplay::HriBodiesDisplay()
-    : Display(), has_new_transforms_(false), time_since_last_transform_(0.0f) {
+    : MFDClass(), has_new_transforms_(false), time_since_last_transform_(0.0f) {
     alpha_property_ = new FloatProperty(
         "Alpha", 1, "Amount of transparency to apply to the links.", this,
         SLOT(updateAlpha()));
@@ -62,31 +63,28 @@ HriBodiesDisplay::HriBodiesDisplay()
 
 HriBodiesDisplay::~HriBodiesDisplay() {
     if (initialized()) {
-        delete robot_;
+        bodies_.clear();
     }
 }
 
 void HriBodiesDisplay::onInitialize() {
-    robot_ = new Robot(scene_node_, context_,
-                       "Robot: " + getName().toStdString(), this);
-
     updateAlpha();
+
+    topic_property_->setString("/humans/bodies/tracked");
 }
 
 void HriBodiesDisplay::updateAlpha() {
-    robot_->setAlpha(alpha_property_->getFloat());
+    for (auto kv : bodies_) {
+        kv.second->setAlpha(alpha_property_->getFloat());
+    }
     context_->queueRender();
 }
 
-// void HriBodiesDisplay::updateRobotDescription() {
-//    if (isEnabled()) load();
-//}
-
-void HriBodiesDisplay::load() {
+void HriBodiesDisplay::load(const string& body_id) {
     clearStatuses();
     context_->queueRender();
 
-    std::string content;
+    string content;
     try {
         if (!update_nh_.getParam("body_test_description", content)) {
             clear();
@@ -112,24 +110,28 @@ void HriBodiesDisplay::load() {
         return;
     }
 
-    if (content == robot_description_) {
+    if (content == body_urdfs_[body_id]) {
         return;
     }
 
-    robot_description_ = content;
+    body_urdfs_[body_id] = content;
 
     urdf::Model descr;
-    if (!descr.initString(robot_description_)) {
+    if (!descr.initString(body_urdfs_[body_id])) {
         clear();
         setStatus(StatusProperty::Error, "URDF", "Failed to parse URDF model");
         return;
     }
 
     setStatus(StatusProperty::Ok, "URDF", "URDF parsed OK");
-    robot_->load(descr);
-    std::stringstream ss;
-    for (const auto& name_link_pair : robot_->getLinks()) {
-        // const std::string& err = name_link_pair.second->getGeometryErrors();
+
+    auto body = new Robot(scene_node_, context_,
+                          "Body: " + getName().toStdString(), this);
+
+    body->load(descr);
+    stringstream ss;
+    for (const auto& name_link_pair : body->getLinks()) {
+        // const string& err = name_link_pair.second->getGeometryErrors();
         // if (!err.empty())
         //  ss << "\n• for link '" << name_link_pair.first << "':\n" << err;
     }
@@ -138,27 +140,41 @@ void HriBodiesDisplay::load() {
             StatusProperty::Error, "URDF",
             QString("Errors loading geometries:").append(ss.str().c_str()));
 
-    robot_->update(TFLinkUpdater(
+    body->update(TFLinkUpdater(
         context_->getFrameManager(),
         boost::bind(linkUpdaterStatusFunction, _1, _2, _3, this)));
+
+    bodies_[body_id] = body;
 }
 
+void HriBodiesDisplay::processMessage(const hri_msgs::IdsListConstPtr& msg) {
+    for (const auto& id : msg->ids) {
+        load(id);
+    }
+};
+
 void HriBodiesDisplay::onEnable() {
-    load();
-    robot_->setVisible(true);
+    for (auto kv : bodies_) {
+        kv.second->setVisible(true);
+    }
 }
 
 void HriBodiesDisplay::onDisable() {
-    robot_->setVisible(false);
+    for (auto kv : bodies_) {
+        kv.second->setVisible(false);
+    }
     clear();
 }
 
 void HriBodiesDisplay::update(float wall_dt, float /*ros_dt*/) {
     time_since_last_transform_ += wall_dt;
 
-    robot_->update(TFLinkUpdater(
-        context_->getFrameManager(),
-        boost::bind(linkUpdaterStatusFunction, _1, _2, _3, this)));
+    for (auto kv : bodies_) {
+        kv.second->update(TFLinkUpdater(
+            context_->getFrameManager(),
+            boost::bind(linkUpdaterStatusFunction, _1, _2, _3, this)));
+    }
+
     context_->queueRender();
 
     has_new_transforms_ = false;
@@ -168,9 +184,9 @@ void HriBodiesDisplay::update(float wall_dt, float /*ros_dt*/) {
 void HriBodiesDisplay::fixedFrameChanged() { has_new_transforms_ = true; }
 
 void HriBodiesDisplay::clear() {
-    robot_->clear();
+    bodies_.clear();
     clearStatuses();
-    robot_description_.clear();
+    body_urdfs_.clear();
 }
 
 void HriBodiesDisplay::reset() {

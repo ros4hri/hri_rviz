@@ -31,31 +31,22 @@
 #define RVIZ_HRI_BODIES_DISPLAY_H
 
 #include <OGRE/OgreVector3.h>
+#include <hri_msgs/IdsList.h>
 #include <rviz/display.h>
+#include <rviz/message_filter_display.h>
 
 #include <map>
 
-namespace Ogre {
-class Entity;
-class SceneNode;
-}  // namespace Ogre
-
-namespace rviz {
-class Axes;
-}
-
 namespace rviz {
 class FloatProperty;
-class Property;
 class Robot;
-class StringProperty;
 
 /**
  * \class HriBodiesDisplay
  * \brief Uses a robot xml description to display the pieces of a robot at the
  * transforms broadcast by rosTF
  */
-class HriBodiesDisplay : public Display {
+class HriBodiesDisplay : public MessageFilterDisplay<hri_msgs::IdsList> {
     Q_OBJECT
    public:
     HriBodiesDisplay();
@@ -77,13 +68,16 @@ class HriBodiesDisplay : public Display {
     /** @brief Loads a URDF from the ros-param named by our
      * "Robot Description" property, iterates through the links, and
      * loads any necessary models. */
-    virtual void load();
+    virtual void load(const std::string& body_id);
+
+    virtual void processMessage(const hri_msgs::IdsListConstPtr& msg) override;
 
     // overrides from Display
     void onEnable() override;
     void onDisable() override;
 
-    Robot* robot_;  ///< Handles actually drawing the robot
+    std::map<std::string, Robot*>
+        bodies_;  ///< Handles actually drawing the humans
 
     bool has_new_transforms_;  ///< Callback sets this to tell our update
                                ///< function it needs to update the
@@ -91,7 +85,7 @@ class HriBodiesDisplay : public Display {
 
     float time_since_last_transform_;
 
-    std::string robot_description_;
+    std::map<std::string, std::string> body_urdfs_;
 
     FloatProperty* alpha_property_;
 };
