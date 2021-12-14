@@ -7,7 +7,10 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rviz
   hri_msgs
+  sensor_msgs
+  cv_bridge
 )
+find_package(OpenCV REQUIRED)
 catkin_package()
 include_directories(${catkin_INCLUDE_DIRS})
 link_directories(${catkin_LIBRARY_DIRS})
@@ -40,6 +43,7 @@ add_definitions(-DQT_NO_KEYWORDS)
 ## The generated MOC files are included automatically as headers.
 set(SRC_FILES
   src/hri_rviz.cpp
+  src/hri_faces.cpp
 )
 
 ## An rviz plugin is just a shared library, so here we declare the
