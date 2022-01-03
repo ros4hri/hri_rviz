@@ -30,21 +30,23 @@
 #define FACES_PANEL_H
 
 #ifndef Q_MOC_RUN
-# include <vector>
-# include <string>
+#include <vector>
+#include <string>
+#include <map>
 
-# include <ros/ros.h>
+#include <ros/ros.h>
 
-# include <rviz/panel.h>
+#include <rviz/panel.h>
 
-# include <hri_msgs/IdsList.h>
-# include <hri_msgs/RegionOfInterestStamped.h>
-# include <sensor_msgs/RegionOfInterest.h>
-# include <sensor_msgs/Image.h>
-# include <cv_bridge/cv_bridge.h>
+#include <hri_msgs/IdsList.h>
+#include <hri_msgs/RegionOfInterestStamped.h>
+#include <sensor_msgs/RegionOfInterest.h>
+#include <sensor_msgs/Image.h>
+#include <cv_bridge/cv_bridge.h>
+#include <opencv2/opencv.hpp>
 
-# include <QPixmap> 
-# include <QLabel>
+#include <QPixmap> 
+#include <QLabel>
 #endif
 
 class QLineEdit;
@@ -62,6 +64,50 @@ class ImageWidget;
 // FacesPanel will show two text-entry field to set the input topics
 // and an image label, to display camera images + bounding box for the 
 // detected face.
+
+class BoundingBox{
+  ros::Subscriber roi_sub_;
+  uint32_t x, y, width, height;
+  hri_msgs::RegionOfInterestStamped roi_;
+  int R_, G_, B_;
+
+  void roiCallback(const hri_msgs::RegionOfInterestStampedConstPtr& msg){
+    roi_.roi.x_offset = msg->roi.x_offset;
+    x = msg->roi.x_offset;
+    roi_.roi.y_offset = msg->roi.y_offset;
+    y = msg->roi.y_offset;
+    roi_.roi.width = msg->roi.width;
+    width = msg->roi.width;
+    roi_.roi.height = msg->roi.height;
+    height = msg->roi.height;
+    ROS_WARN("New bb");
+    std::cout << msg->roi.x_offset << " "<< msg->roi.y_offset << std::endl;
+    std::cout << roi_.roi.x_offset << " " << roi_.roi.y_offset << " " << roi_.roi.width << " " << roi_.roi.height << std::endl;
+    std::cout << x << " " << y << " " << width << " " << height << std::endl;
+  }
+
+public:
+
+  BoundingBox(const std::string& id, ros::NodeHandle& nh, int R, int G, int B): R_(R), G_(G), B_(B){
+    std::string topic = "/humans/faces/"+id+"/roi";
+    //roi_sub_ = nh.subscribe(topic, 1, boost::bind(&BoundingBox::roiCallback, this, _3, face_id, _2, _1));
+    roi_sub_ = nh.subscribe(topic, 1, &BoundingBox::roiCallback, this);
+    roi_.roi.width = -1;
+  }
+
+  ~BoundingBox(){};
+
+  inline int getR() const {return R_;}
+  inline int getG() const {return G_;}
+  inline int getB() const {return B_;}
+
+  inline bool bbInitialized() const {return roi_.roi.width>0;}
+
+  inline cv::Rect getRect() const {return cv::Rect(int(roi_.roi.x_offset), int(roi_.roi.y_offset), int(roi_.roi.width), int(roi_.roi.height));}
+  inline void shutdown() {roi_sub_.shutdown();}
+
+};
+
 class FacesPanel: public rviz::Panel
 {
 
@@ -119,18 +165,18 @@ protected:
 
   // Structures needed to update the id of the detected face
   // and the relative roi. 
-  std::vector<std::string> ids_;
+  std::vector<std::string> ids_, prev_ids_;
+  std::map<std::string, BoundingBox> faces_; 
   std::string current_id_; //Just for one face detection
-  hri_msgs::RegionOfInterestStamped roi_;
 
   //Declaration of the various ROS callbacks 
-  void faceCallback(const hri_msgs::RegionOfInterestStampedConstPtr& msg);
   void imgCallback(const sensor_msgs::ImageConstPtr& msg);
+  //void imgCallback(const sensor_msgs::ImageConstPtr& msg, const std::string &id);
   void idsCallback(const hri_msgs::IdsListConstPtr& msg);
 
   //Declaration of the setTopic(...) function
   template<class M>
-  void setTopic( const QString& new_topic, QString& topic_to_set, ros::Subscriber& sub_to_set, void(FacesPanel::*fp)(const boost::shared_ptr<M const>&));
+  void setTopic(const QString& new_topic, QString& topic_to_set, ros::Subscriber& sub_to_set, void(FacesPanel::*fp)(const boost::shared_ptr<M const>&));
   // END_TUTORIAL
 };
 

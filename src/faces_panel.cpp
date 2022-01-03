@@ -27,6 +27,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <algorithm>
+
 #include <stdio.h>
 
 #include <QPainter>
@@ -84,8 +86,6 @@ FacesPanel::FacesPanel( QWidget* parent )
           this, 
           SLOT(updateImgTopic()));
 
-  // We set the roi width to -1, which means that no roi is currently present
-  roi_.roi.width = -1;
 }
 
 
@@ -115,27 +115,32 @@ void FacesPanel::idsCallback(const hri_msgs::IdsListConstPtr& msg)
 {
   if( ros::ok() ){
     ids_ = msg->ids;
-    if(!ids_.empty() && ids_[0]!="" && ids_[0]!=current_id_){
-      std::string roi_topic = "/humans/faces/"+ids_[0]+"/roi";
-      face_subscriber_.shutdown();
-      face_subscriber_ = nh_.subscribe(roi_topic, 
-                                       1, 
-                                       &FacesPanel::faceCallback, 
-                                       this);
-    }
-    else
-      roi_.roi.width = -1;
-  }
-}
 
-void FacesPanel::faceCallback(
-  const hri_msgs::RegionOfInterestStampedConstPtr& msg)
-{
-  roi_.roi.x_offset = msg->roi.x_offset;
-  roi_.roi.y_offset = msg->roi.y_offset;
-  roi_.roi.width = msg->roi.width;
-  roi_.roi.height = msg->roi.height;
-  roi_.header = msg->header;
+    //Check for faces that are no more in the list
+    //Remove them from the map
+
+    for(std::map<std::string, BoundingBox>::iterator it = faces_.begin(); it != faces_.end();){
+      if(std::find(ids_.begin(), ids_.end(), it->first) == ids_.end()){
+        it->second.shutdown();
+        faces_.erase((it++)->first);
+        ROS_WARN("Removed Face!");
+        std::cout<<faces_.size()<<std::endl;
+      }
+      else
+        ++it;
+    }
+
+    //Check for new faces
+    //Create a bounding box message and insert it in the map
+
+    for(std::vector<std::string>::iterator it = ids_.begin(); it != ids_.end(); it++)
+      if(faces_.find(*it) == faces_.end()){
+        std::string id = *it;
+        faces_.insert(std::pair<std::string, BoundingBox>(id, BoundingBox(id, nh_, 0, 255, 0))); //FINISHED HERE
+        ROS_WARN("Inserted Face!");
+        std::cout<<faces_.size()<<std::endl;
+      }
+  }
 }
 
 void FacesPanel::imgCallback(const sensor_msgs::ImageConstPtr& msg)
@@ -146,12 +151,13 @@ void FacesPanel::imgCallback(const sensor_msgs::ImageConstPtr& msg)
   cvBridge_ = cv_bridge::toCvCopy(msg);
   cv::Mat image = cvBridge_->image;
 
-  if(roi_.roi.width > 0){
-    rect = cv::Rect(int(roi_.roi.x_offset), 
-                    int(roi_.roi.y_offset), 
-                    int(roi_.roi.width), 
-                    int(roi_.roi.height));
-    cv::rectangle(cvBridge_->image, rect, cv::Scalar(0, 255, 0), 5);
+  for(std::map<std::string, BoundingBox>::iterator it = faces_.begin(); it != faces_.end(); it++){
+    if(it->second.bbInitialized()){
+      cv::rectangle(cvBridge_->image, it->second.getRect(), cv::Scalar(0, 255, 0), 5);
+      ROS_WARN("Printed");
+    }
+    else
+      ROS_WARN("BB not initialized");
   }
 
   imageLabel->setPixmap(
