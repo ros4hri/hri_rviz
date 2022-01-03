@@ -64,6 +64,13 @@
 
 namespace rviz
 {
+
+BoundingBox::BoundingBox(const std::string& id, ros::NodeHandle& nh, int R, int G, int B, FacesDisplay* obj): R_(R), G_(G), B_(B){
+    std::string topic = "/humans/faces/"+id+"/roi";
+    roi_sub_ = nh.subscribe<hri_msgs::RegionOfInterestStamped>(topic, 1, std::bind(&FacesDisplay::bb_callback, obj, std::placeholders::_1, id));
+    width = 0;
+}
+
 FacesDisplay::FacesDisplay() : ImageDisplayBase(), texture_()
 {
   normalize_property_ = new BoolProperty(
@@ -95,7 +102,6 @@ void FacesDisplay::onInitialize()
     img_scene_manager_ = Ogre::Root::getSingleton().createSceneManager(Ogre::ST_GENERIC, ss.str());
     
     faces_list_sub_ = update_nh_.subscribe("/humans/faces/tracked", 1, &FacesDisplay::list_callback, this);
-    bb_.height = -1; //Just to say that still no face has been detected; to change for multiple faces detection
   }
 
   img_scene_node_ = img_scene_manager_->getRootSceneNode()->createChildSceneNode();
@@ -103,7 +109,7 @@ void FacesDisplay::onInitialize()
   {
     static int count = 0;
     std::stringstream ss;
-    ss << "ImageDisplayObject" << count++;
+    ss << "FacesDisplayObject" << count++;
 
     screen_rect_ = new Ogre::Rectangle2D(true);
     screen_rect_->setRenderQueueGroup(Ogre::RENDER_QUEUE_OVERLAY - 1);
@@ -253,16 +259,12 @@ void FacesDisplay::processMessage(const sensor_msgs::Image::ConstPtr& msg)
     updateNormalizeOptions();
   }
   
-  if(bb_.height > 0){
+  if(faces_.size() > 0){
     cvBridge_ = cv_bridge::toCvCopy(msg);
-    if(checkBbConsistency(cvBridge_->image.rows, 
-                          cvBridge_->image.cols, 
-                          bb_.x_offset, 
-                          bb_.y_offset, 
-                          bb_.height, 
-                          bb_.width)){
-      cv::Rect rect(int(bb_.x_offset), int(bb_.y_offset), int(bb_.width), int(bb_.height));
-      cv::rectangle(cvBridge_->image, rect, cv::Scalar(0, 255, 0), 5);
+    for(std::map<std::string, BoundingBox>::iterator it = faces_.begin(); it != faces_.end(); ++it){
+      if(it->second.bbInitialized()){
+        cv::rectangle(cvBridge_->image, it->second.getRect(), it->second.getRGB(), 5);
+      }
     }
     texture_.addMessage(cvBridge_->toImageMsg());
   }
@@ -272,21 +274,41 @@ void FacesDisplay::processMessage(const sensor_msgs::Image::ConstPtr& msg)
 
 void FacesDisplay::list_callback(const hri_msgs::IdsListConstPtr& msg){
   
-  ids_.clear();
-  ids_ = msg->ids;
-  if(!ids_.empty()){
-    std::stringstream topic_stream;
-    topic_stream << "/humans/faces/"<<ids_[0]<<"/roi";
-    std::string topic = topic_stream.str();
-    face_roi_sub_ = update_nh_.subscribe(topic, 1, &FacesDisplay::bb_callback, this); 
+  if(ros::ok()){
+    ids_ = msg->ids;
+
+    //Check for faces that are no more in the list
+    //Remove them from the map
+
+    for(std::map<std::string, BoundingBox>::iterator it = faces_.begin(); it != faces_.end();){
+      if(std::find(ids_.begin(), ids_.end(), it->first) == ids_.end()){
+        it->second.shutdown();
+        faces_.erase((it++)->first);
+      }
+      else
+        ++it;
+    }
+
+    //Check for new faces
+    //Create a bounding box message and insert it in the map
+
+    for(std::vector<std::string>::iterator it = ids_.begin(); it != ids_.end(); it++){
+      if(faces_.find(*it) == faces_.end()){
+        std::string id = *it;
+        faces_.insert(std::pair<std::string, BoundingBox>(id, BoundingBox(id, update_nh_, std::rand()%256, std::rand()%256, std::rand()%256, this)));
+      }
+    }
   }
-  else
-    bb_.height = -1;
 
 }
 
-void FacesDisplay::bb_callback(const hri_msgs::RegionOfInterestStampedConstPtr& msg){
-  bb_ = msg->roi;
+void FacesDisplay::bb_callback(const hri_msgs::RegionOfInterestStampedConstPtr& msg, const std::string& id){
+  BoundingBox& face = faces_.find(id)->second;
+
+  face.x = msg->roi.x_offset;
+  face.y = msg->roi.y_offset;
+  face.width = msg->roi.width;
+  face.height = msg->roi.height;
 }
 
 bool FacesDisplay::checkBbConsistency(const int& image_height,
