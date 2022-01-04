@@ -46,13 +46,16 @@
 #include "rviz/properties/float_property.h"
 #include "rviz/properties/int_property.h"
 
+#include "ros/ros.h"
+
+#include <map>
 #include <vector>
 #include <string>
+
 #include <hri_msgs/IdsList.h>
 #include <hri_msgs/RegionOfInterestStamped.h>
+
 #include <sensor_msgs/RegionOfInterest.h>
-#include <map>
-#include "ros/ros.h"
 #include <cv_bridge/cv_bridge.h>
 #endif
 
@@ -76,7 +79,7 @@ class BoundingBox
 
 public:
 
-  BoundingBox(const std::string& id, ros::NodeHandle& nh, int R, int G, int B, FacesDisplay* obj);
+  BoundingBox(const std::string& ns, const std::string& id, ros::NodeHandle& nh, int R, int G, int B, FacesDisplay* obj);
 
   ~BoundingBox(){};
 
@@ -114,6 +117,8 @@ public:
 
 public Q_SLOTS:
   virtual void updateNormalizeOptions();
+  void updateShowFaces();
+  void updateShowBodies();
 
 protected:
   // overrides from Display
@@ -130,8 +135,8 @@ protected:
   RenderPanel* render_panel_;
 
   //ros::NodeHandle nh_;
-  ros::Subscriber faces_list_sub_;
-  std::vector<std::string> ids_;
+  ros::Subscriber faces_list_sub_, bodies_list_sub_;
+  std::vector<std::string> ids_, body_ids_;
   ros::Subscriber face_roi_sub_; //Currently just one face detected
   cv_bridge::CvImagePtr cvBridge_;
 
@@ -148,13 +153,18 @@ private:
   Ogre::MaterialPtr material_;
 
   BoolProperty* normalize_property_;
+  BoolProperty* show_faces_property_;
+  BoolProperty* show_bodies_property_;
   FloatProperty* min_property_;
   FloatProperty* max_property_;
   IntProperty* median_buffer_size_property_;
   bool got_float_image_;
-  std::map<std::string, BoundingBox> faces_; 
+  bool show_faces_, show_bodies_;
+  std::map<std::string, BoundingBox> faces_;
+  std::map<std::string, BoundingBox> bodies_; 
 
   void list_callback(const hri_msgs::IdsListConstPtr& msg);
+  void bodyListCallback(const hri_msgs::IdsListConstPtr& msg);
 
   void bb_callback(const hri_msgs::RegionOfInterestStampedConstPtr& msg, const std::string& id);
 

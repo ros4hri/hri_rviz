@@ -65,9 +65,22 @@
 namespace rviz
 {
 
-BoundingBox::BoundingBox(const std::string& id, ros::NodeHandle& nh, int R, int G, int B, FacesDisplay* obj): R_(R), G_(G), B_(B){
-    std::string topic = "/humans/faces/"+id+"/roi";
-    roi_sub_ = nh.subscribe<hri_msgs::RegionOfInterestStamped>(topic, 1, std::bind(&FacesDisplay::bb_callback, obj, std::placeholders::_1, id));
+BoundingBox::BoundingBox(const std::string& ns,
+                         const std::string& id, 
+                         ros::NodeHandle& nh, 
+                         int R, 
+                         int G, 
+                         int B, 
+                         FacesDisplay* obj): R_(R), G_(G), B_(B){
+    std::string topic = ns+id+"/roi";
+    roi_sub_ = nh.subscribe<hri_msgs::RegionOfInterestStamped>(
+                            topic, 
+                            1, 
+                            std::bind(&FacesDisplay::bb_callback, 
+                                      obj, 
+                                      std::placeholders::_1, 
+                                      id)
+                            );
     width = 0;
 }
 
@@ -88,6 +101,12 @@ FacesDisplay::FacesDisplay() : ImageDisplayBase(), texture_()
       new IntProperty("Median window", 5, "Window size for median filter used for computin min/max.",
                       this, SLOT(updateNormalizeOptions()));
 
+  show_faces_property_ = new BoolProperty("Faces", true, "If set to true, show faces bounding boxes.", this, SLOT(updateShowFaces()));
+
+  show_bodies_property_ = new BoolProperty("Bodies", false, "If set to true, show bodies bounding boxes.", this, SLOT(updateShowBodies()));
+
+  show_faces_ = true;
+  show_bodies_ = false;
   got_float_image_ = false;
 
 }
@@ -99,12 +118,24 @@ void FacesDisplay::onInitialize()
     static uint32_t count = 0;
     std::stringstream ss;
     ss << "FacesDisplay" << count++;
-    img_scene_manager_ = Ogre::Root::getSingleton().createSceneManager(Ogre::ST_GENERIC, ss.str());
+    img_scene_manager_ = 
+      Ogre::Root::getSingleton().createSceneManager(Ogre::ST_GENERIC, ss.str());
     
-    faces_list_sub_ = update_nh_.subscribe("/humans/faces/tracked", 1, &FacesDisplay::list_callback, this);
+    faces_list_sub_ = 
+      update_nh_.subscribe("/humans/faces/tracked", 
+                           1, 
+                           &FacesDisplay::list_callback, 
+                           this);
+    /*bodies_list_sub_ = 
+      update_nh_.subscribe("/humans/bodies/tracked", 
+                           1, 
+                           &FacesDisplay::bodyListCallback, 
+                           this);*/
+
   }
 
-  img_scene_node_ = img_scene_manager_->getRootSceneNode()->createChildSceneNode();
+  img_scene_node_ = 
+    img_scene_manager_->getRootSceneNode()->createChildSceneNode();
 
   {
     static int count = 0;
@@ -124,7 +155,8 @@ void FacesDisplay::onInitialize()
     material_->setDepthCheckEnabled(false);
 
     material_->getTechnique(0)->setLightingEnabled(false);
-    Ogre::TextureUnitState* tu = material_->getTechnique(0)->getPass(0)->createTextureUnitState();
+    Ogre::TextureUnitState* tu = 
+      material_->getTechnique(0)->getPass(0)->createTextureUnitState();
     tu->setTextureName(texture_.getTexture()->getName());
     tu->setTextureFiltering(Ogre::TFO_NONE);
 
@@ -158,7 +190,8 @@ FacesDisplay::~FacesDisplay()
   {
     delete render_panel_;
     delete screen_rect_;
-    removeAndDestroyChildNode(img_scene_node_->getParentSceneNode(), img_scene_node_);
+    removeAndDestroyChildNode(img_scene_node_->getParentSceneNode(), 
+                              img_scene_node_);
   }
 }
 
@@ -175,6 +208,14 @@ void FacesDisplay::onDisable()
   reset();
 }
 
+void FacesDisplay::updateShowFaces(){
+  show_faces_ = show_faces_property_->getBool();
+}
+
+void FacesDisplay::updateShowBodies(){
+  show_bodies_ = show_bodies_property_->getBool();
+}
+
 void FacesDisplay::updateNormalizeOptions()
 {
   if (got_float_image_)
@@ -186,7 +227,9 @@ void FacesDisplay::updateNormalizeOptions()
     max_property_->setHidden(normalize);
     median_buffer_size_property_->setHidden(!normalize);
 
-    texture_.setNormalizeFloatImage(normalize, min_property_->getFloat(), max_property_->getFloat());
+    texture_.setNormalizeFloatImage(normalize, 
+                                    min_property_->getFloat(), 
+                                    max_property_->getFloat());
     texture_.setMedianFrames(median_buffer_size_property_->getInt());
   }
   else
@@ -213,7 +256,8 @@ void FacesDisplay::update(float wall_dt, float ros_dt)
     float img_width = texture_.getWidth();
     float img_height = texture_.getHeight();
 
-    if (img_width != 0 && img_height != 0 && win_width != 0 && win_height != 0)
+    if (img_width != 0 && img_height != 0 
+      && win_width != 0 && win_height != 0)
     {
       float img_aspect = img_width / img_height;
       float win_aspect = win_width / win_height;
@@ -225,8 +269,11 @@ void FacesDisplay::update(float wall_dt, float ros_dt)
       }
       else
       {
-        screen_rect_->setCorners(-1.0f * img_aspect / win_aspect, 1.0f, 1.0f * img_aspect / win_aspect,
-                                 -1.0f, false);
+        screen_rect_->setCorners(-1.0f * img_aspect / win_aspect, 
+                                 1.0f, 
+                                 1.0f * img_aspect / win_aspect,
+                                 -1.0f, 
+                                 false);
       }
     }
 
@@ -242,34 +289,58 @@ void FacesDisplay::reset()
 {
   ImageDisplayBase::reset();
   texture_.clear();
-  render_panel_->getCamera()->setPosition(Ogre::Vector3(999999, 999999, 999999));
+  render_panel_->getCamera()->setPosition(Ogre::Vector3(999999, 
+                                                        999999, 
+                                                        999999));
 }
 
-/* This is called by incomingMessage(). */
 void FacesDisplay::processMessage(const sensor_msgs::Image::ConstPtr& msg)
 {
-  bool got_float_image = msg->encoding == sensor_msgs::image_encodings::TYPE_32FC1 ||
-                         msg->encoding == sensor_msgs::image_encodings::TYPE_16UC1 ||
-                         msg->encoding == sensor_msgs::image_encodings::TYPE_16SC1 ||
-                         msg->encoding == sensor_msgs::image_encodings::MONO16;
+  bool got_float_image = 
+    msg->encoding == sensor_msgs::image_encodings::TYPE_32FC1 ||
+    msg->encoding == sensor_msgs::image_encodings::TYPE_16UC1 ||
+    msg->encoding == sensor_msgs::image_encodings::TYPE_16SC1 ||
+    msg->encoding == sensor_msgs::image_encodings::MONO16;
 
   if (got_float_image != got_float_image_)
   {
     got_float_image_ = got_float_image;
     updateNormalizeOptions();
   }
-  
-  if(faces_.size() > 0){
-    cvBridge_ = cv_bridge::toCvCopy(msg);
-    for(std::map<std::string, BoundingBox>::iterator it = faces_.begin(); it != faces_.end(); ++it){
+
+  if((!show_faces_ && !show_bodies_) || ((faces_.size() == 0) && (bodies_.size() == 0))){
+    texture_.addMessage(msg);
+    return;
+  }
+
+  cvBridge_ = cv_bridge::toCvCopy(msg);
+
+  if(faces_.size() > 0 && show_faces_){
+    std::map<std::string, BoundingBox>::iterator it; 
+    for(it = faces_.begin(); it != faces_.end(); ++it){
       if(it->second.bbInitialized()){
-        cv::rectangle(cvBridge_->image, it->second.getRect(), it->second.getRGB(), 5);
+        cv::rectangle(cvBridge_->image, 
+                      it->second.getRect(), 
+                      it->second.getRGB(), 
+                      5);
       }
     }
-    texture_.addMessage(cvBridge_->toImageMsg());
   }
-  else
-    texture_.addMessage(msg);
+
+  if(bodies_.size() > 0 && show_bodies_){
+    std::map<std::string, BoundingBox>::iterator it; 
+    for(it = bodies_.begin(); it != bodies_.end(); ++it){
+      if(it->second.bbInitialized()){
+        cv::rectangle(cvBridge_->image, 
+                      it->second.getRect(), 
+                      it->second.getRGB(), 
+                      5);
+      }
+    }
+  }
+
+  texture_.addMessage(cvBridge_->toImageMsg());
+
 }
 
 void FacesDisplay::list_callback(const hri_msgs::IdsListConstPtr& msg){
@@ -280,29 +351,107 @@ void FacesDisplay::list_callback(const hri_msgs::IdsListConstPtr& msg){
     //Check for faces that are no more in the list
     //Remove them from the map
 
-    for(std::map<std::string, BoundingBox>::iterator it = faces_.begin(); it != faces_.end();){
-      if(std::find(ids_.begin(), ids_.end(), it->first) == ids_.end()){
-        it->second.shutdown();
-        faces_.erase((it++)->first);
+    std::map<std::string, BoundingBox>::iterator itF;
+    for(itF = faces_.begin(); itF != faces_.end();){
+      if(std::find(ids_.begin(), ids_.end(), itF->first) == ids_.end()){
+        itF->second.shutdown();
+        faces_.erase((itF++)->first);
       }
       else
-        ++it;
+        ++itF;
     }
 
     //Check for new faces
     //Create a bounding box message and insert it in the map
 
-    for(std::vector<std::string>::iterator it = ids_.begin(); it != ids_.end(); it++){
-      if(faces_.find(*it) == faces_.end()){
-        std::string id = *it;
-        faces_.insert(std::pair<std::string, BoundingBox>(id, BoundingBox(id, update_nh_, std::rand()%256, std::rand()%256, std::rand()%256, this)));
+    std::vector<std::string>::iterator itS;
+    for(itS = ids_.begin(); itS != ids_.end(); ++itS){
+      if(faces_.find(*itS) == faces_.end()){
+        std::string id = *itS;
+        faces_.insert(
+          std::pair<std::string, BoundingBox>(
+            id, 
+            BoundingBox(
+              "/humans/faces/",
+              id, 
+              update_nh_, 
+              std::rand()%256, 
+              std::rand()%256, 
+              std::rand()%256, 
+              this
+            )
+          )
+        );
       }
     }
   }
 
 }
 
-void FacesDisplay::bb_callback(const hri_msgs::RegionOfInterestStampedConstPtr& msg, const std::string& id){
+void FacesDisplay::bodyListCallback(const hri_msgs::IdsListConstPtr& msg){
+  
+  ROS_WARN("Body list processing");
+
+  if(ros::ok()){
+    ROS_WARN("Inside");
+    body_ids_ = msg->ids;
+
+    std::cout<<"Old number of bodies: "<<bodies_.size()<<"\t New number of bodies: "<<body_ids_.size()<<std::endl;
+
+    //Check for faces that are no more in the list
+    //Remove them from the map
+
+    std::map<std::string, BoundingBox>::iterator itF;
+    for(itF = bodies_.begin(); itF != bodies_.end();){
+      std::cout<<itF->first<<std::endl;
+      ROS_WARN("Inside 1");
+      //std::cout<<itF->first<<std::endl;
+      ROS_WARN("Inside 1.5");
+      if(std::find(body_ids_.begin(), body_ids_.end(), itF->first) == body_ids_.end()){
+        ROS_WARN("Deleting Body: start");
+        itF->second.shutdown();
+        ROS_WARN("Deleting Body: mid");
+        bodies_.erase((itF++)->first);
+        ROS_WARN("Deleting Body: end");
+      }
+      else
+        ++itF;
+    }
+    ROS_WARN("Outside 1");
+
+    //Check for new faces
+    //Create a bounding box message and insert it in the map
+
+    std::vector<std::string>::iterator itS;
+    for(itS = body_ids_.begin(); itS != body_ids_.end(); ++itS){
+      ROS_WARN("Inside 2");
+      if(bodies_.find(*itS) == bodies_.end()){
+        ROS_WARN("Inserting new body");
+        std::string id = *itS;
+        bodies_.insert(
+          std::pair<std::string, BoundingBox>(
+            id, 
+            BoundingBox(
+              "/humans/bodies/",
+              id, 
+              update_nh_, 
+              std::rand()%256, 
+              std::rand()%256, 
+              std::rand()%256, 
+              this
+            )
+          )
+        );
+      }
+    }
+    ROS_WARN("outside 2");
+  }
+  ROS_WARN("Out");
+
+}
+
+void FacesDisplay::bb_callback(const hri_msgs::RegionOfInterestStampedConstPtr& msg, 
+                               const std::string& id){
   BoundingBox& face = faces_.find(id)->second;
 
   face.x = msg->roi.x_offset;
