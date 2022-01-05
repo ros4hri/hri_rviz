@@ -31,82 +31,72 @@
 #ifndef RVIZ_IMAGE_DISPLAY_H
 #define RVIZ_IMAGE_DISPLAY_H
 
-#ifndef Q_MOC_RUN // See: https://bugreports.qt-project.org/browse/QTBUG-22829
-#include <QObject>
-
+#ifndef Q_MOC_RUN  // See: https://bugreports.qt-project.org/browse/QTBUG-22829
 #include <OGRE/OgreMaterial.h>
 #include <OGRE/OgreRenderTargetListener.h>
 #include <OGRE/OgreSharedPtr.h>
+#include <cv_bridge/cv_bridge.h>
+#include <hri_msgs/IdsList.h>
+#include <hri_msgs/RegionOfInterestStamped.h>
+#include <sensor_msgs/RegionOfInterest.h>
 
+#include <QObject>
+#include <map>
+#include <string>
+#include <vector>
+
+#include "ros/ros.h"
 #include "rviz/image/image_display_base.h"
 #include "rviz/image/ros_image_texture.h"
-#include "rviz/render_panel.h"
-
 #include "rviz/properties/bool_property.h"
 #include "rviz/properties/float_property.h"
 #include "rviz/properties/int_property.h"
-
-#include "ros/ros.h"
-
-#include <map>
-#include <vector>
-#include <string>
-
-#include <hri_msgs/IdsList.h>
-#include <hri_msgs/RegionOfInterestStamped.h>
-
-#include <sensor_msgs/RegionOfInterest.h>
-#include <cv_bridge/cv_bridge.h>
+#include "rviz/render_panel.h"
 #endif
 
-
-namespace Ogre
-{
+namespace Ogre {
 class SceneNode;
 class Rectangle2D;
-} // namespace Ogre
+}  // namespace Ogre
 
-namespace rviz
-{
+namespace rviz {
 
 class FacesDisplay;
 
-class BoundingBox
-{
+class BoundingBox {
   uint32_t x, y, width, height;
   ros::Subscriber roi_sub_;
   int R_, G_, B_;
 
-public:
-
-  BoundingBox(const std::string& ns, const std::string& id, ros::NodeHandle& nh, int R, int G, int B, FacesDisplay* obj);
+ public:
+  BoundingBox(const std::string& ns, const std::string& id, ros::NodeHandle& nh,
+              int R, int G, int B, FacesDisplay* obj);
 
   ~BoundingBox(){};
 
-  inline int getR() const {return R_;}
-  inline int getG() const {return G_;}
-  inline int getB() const {return B_;}
+  inline int getR() const { return R_; }
+  inline int getG() const { return G_; }
+  inline int getB() const { return B_; }
 
-  inline cv::Scalar getRGB() const {return cv::Scalar(R_, G_, B_);}
+  inline cv::Scalar getRGB() const { return cv::Scalar(R_, G_, B_); }
 
-  inline bool bbInitialized() const {return width>0;}
+  inline bool bbInitialized() const { return width > 0; }
 
-  inline cv::Rect getRect() const {return cv::Rect(int(x), int(y), int(width), int(height));}
-  inline void shutdown() {roi_sub_.shutdown();}
+  inline cv::Rect getRect() const {
+    return cv::Rect(int(x), int(y), int(width), int(height));
+  }
+  inline void shutdown() { roi_sub_.shutdown(); }
 
   friend class FacesDisplay;
-
 };
 
 /**
  * \class FacesDisplay
  *
  */
-class FacesDisplay : public ImageDisplayBase
-{
-
+class FacesDisplay : public ImageDisplayBase {
   Q_OBJECT
-public:
+ public:
   FacesDisplay();
   ~FacesDisplay() override;
 
@@ -115,12 +105,12 @@ public:
   void update(float wall_dt, float ros_dt) override;
   void reset() override;
 
-public Q_SLOTS:
+ public Q_SLOTS:
   virtual void updateNormalizeOptions();
   void updateShowFaces();
   void updateShowBodies();
 
-protected:
+ protected:
   // overrides from Display
   void onEnable() override;
   void onDisable() override;
@@ -134,20 +124,17 @@ protected:
 
   RenderPanel* render_panel_;
 
-  //ros::NodeHandle nh_;
+  // ros::NodeHandle nh_;
   ros::Subscriber faces_list_sub_, bodies_list_sub_;
   std::vector<std::string> ids_, body_ids_;
-  ros::Subscriber face_roi_sub_; //Currently just one face detected
+  ros::Subscriber face_roi_sub_;  // Currently just one face detected
   cv_bridge::CvImagePtr cvBridge_;
 
-  bool checkBbConsistency(const int& image_height,
-                            const int& image_width,
-                            const int& bb_x,
-                            const int& bb_y,
-                            const int& bb_height,
-                            const int& bb_width) const;
+  bool checkBbConsistency(const int& image_height, const int& image_width,
+                          const int& bb_x, const int& bb_y,
+                          const int& bb_height, const int& bb_width) const;
 
-private:
+ private:
   Ogre::SceneNode* img_scene_node_;
   Ogre::Rectangle2D* screen_rect_;
   Ogre::MaterialPtr material_;
@@ -161,17 +148,17 @@ private:
   bool got_float_image_;
   bool show_faces_, show_bodies_;
   std::map<std::string, BoundingBox> faces_;
-  std::map<std::string, BoundingBox> bodies_; 
+  std::map<std::string, BoundingBox> bodies_;
 
   void list_callback(const hri_msgs::IdsListConstPtr& msg);
   void bodyListCallback(const hri_msgs::IdsListConstPtr& msg);
 
-  void bb_callback(const hri_msgs::RegionOfInterestStampedConstPtr& msg, const std::string& id);
+  void bb_callback(const hri_msgs::RegionOfInterestStampedConstPtr& msg,
+                   const std::string& id);
 
   friend class BoundingBox;
-
 };
 
-} // namespace rviz
+}  // namespace rviz
 
 #endif

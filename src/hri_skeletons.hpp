@@ -30,26 +30,22 @@
 #ifndef RVIZ_HUMANS_MODEL_DISPLAY_H
 #define RVIZ_HUMANS_MODEL_DISPLAY_H
 
+#include <OGRE/OgreVector3.h>
+#include <hri_msgs/IdsList.h>
 #include <rviz/display.h>
 
-#include <OGRE/OgreVector3.h>
-
 #include <map>
-#include <hri_msgs/IdsList.h>
 
-namespace Ogre
-{
+namespace Ogre {
 class Entity;
 class SceneNode;
-} // namespace Ogre
+}  // namespace Ogre
 
-namespace rviz
-{
+namespace rviz {
 class Axes;
 }
 
-namespace rviz
-{
+namespace rviz {
 class FloatProperty;
 class Property;
 class Robot;
@@ -57,18 +53,17 @@ class StringProperty;
 
 /**
  * \class HumansModelDisplay
- * \brief Uses a robot xml description to display the pieces of a robot at the transforms broadcast by
- * rosTF
+ * \brief Uses a robot xml description to display the pieces of a robot at the
+ * transforms broadcast by rosTF
  */
-class HumansModelDisplay : public Display
-{
+class HumansModelDisplay : public Display {
   Q_OBJECT
-public:
+ public:
   HumansModelDisplay();
   ~HumansModelDisplay() override;
 
   // Overrides from Display
-  void onInitialize() override; 
+  void onInitialize() override;
   void update(float wall_dt, float ros_dt) override;
   void fixedFrameChanged() override;
   void reset() override;
@@ -76,27 +71,28 @@ public:
 
   void clear();
 
-private Q_SLOTS:
+ private Q_SLOTS:
   void updateVisualVisible();
   void updateCollisionVisible();
   void updateTfPrefix();
   void updateAlpha();
-  //void updateRobotDescription();
+  // void updateRobotDescription();
 
-protected:
+ protected:
   /** @brief Loads a URDF from the ros-param named by our
    * "Robot Description" property, iterates through the links, and
    * loads any necessary models. */
-  //virtual void load();
+  // virtual void load();
 
   // overrides from Display
   void onEnable() override;
   void onDisable() override;
 
-  //Robot* robot_; ///< Handles actually drawing the robot
+  // Robot* robot_; ///< Handles actually drawing the robot
 
-  bool has_new_transforms_; ///< Callback sets this to tell our update function it needs to update the
-                            /// transforms
+  bool has_new_transforms_;  ///< Callback sets this to tell our update function
+                             ///< it needs to update the
+                             /// transforms
 
   float time_since_last_transform_;
 
@@ -110,16 +106,14 @@ protected:
 
   std::map<std::string, Robot*> humans_;
 
-private:
-
+ private:
   std::vector<std::string> ids_;
-  ros::Subscriber idsSub_; //Subscriber for the ids list
+  ros::Subscriber idsSub_;  // Subscriber for the ids list
 
   void idsCallback(const hri_msgs::IdsListConstPtr& msg);
   void initializeRobot(std::map<std::string, Robot*>::iterator it);
-
 };
 
-} // namespace rviz
+}  // namespace rviz
 
 #endif
