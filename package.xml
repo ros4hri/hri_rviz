@@ -12,6 +12,7 @@
   <buildtool_depend>catkin</buildtool_depend>
   <depend>roscpp</depend>
   <depend>hri_msgs</depend>
+  <depend>hri</depend>
 
   <build_depend>qtbase5-dev</build_depend>
   <build_depend>rviz</build_depend>

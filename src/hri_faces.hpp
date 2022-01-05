@@ -45,6 +45,7 @@
 #include <string>
 #include <vector>
 
+#include "hri/hri.h"
 #include "ros/ros.h"
 #include "rviz/image/image_display_base.h"
 #include "rviz/image/ros_image_texture.h"
@@ -61,39 +62,6 @@ class Rectangle2D;
 
 namespace rviz {
 
-class FacesDisplay;
-
-class BoundingBox {
-  uint32_t x, y, width, height;
-  ros::Subscriber roi_sub_;
-  int R_, G_, B_;
-
- public:
-  BoundingBox(const std::string& ns, const std::string& id, ros::NodeHandle& nh,
-              int R, int G, int B, FacesDisplay* obj);
-
-  ~BoundingBox(){};
-
-  inline int getR() const { return R_; }
-  inline int getG() const { return G_; }
-  inline int getB() const { return B_; }
-
-  inline cv::Scalar getRGB() const { return cv::Scalar(R_, G_, B_); }
-
-  inline bool bbInitialized() const { return width > 0; }
-
-  inline cv::Rect getRect() const {
-    return cv::Rect(int(x), int(y), int(width), int(height));
-  }
-  inline void shutdown() { roi_sub_.shutdown(); }
-
-  friend class FacesDisplay;
-};
-
-/**
- * \class FacesDisplay
- *
- */
 class FacesDisplay : public ImageDisplayBase {
   Q_OBJECT
  public:
@@ -125,14 +93,6 @@ class FacesDisplay : public ImageDisplayBase {
   RenderPanel* render_panel_;
 
   // ros::NodeHandle nh_;
-  ros::Subscriber faces_list_sub_, bodies_list_sub_;
-  std::vector<std::string> ids_, body_ids_;
-  ros::Subscriber face_roi_sub_;  // Currently just one face detected
-  cv_bridge::CvImagePtr cvBridge_;
-
-  bool checkBbConsistency(const int& image_height, const int& image_width,
-                          const int& bb_x, const int& bb_y,
-                          const int& bb_height, const int& bb_width) const;
 
  private:
   Ogre::SceneNode* img_scene_node_;
@@ -147,16 +107,9 @@ class FacesDisplay : public ImageDisplayBase {
   IntProperty* median_buffer_size_property_;
   bool got_float_image_;
   bool show_faces_, show_bodies_;
-  std::map<std::string, BoundingBox> faces_;
-  std::map<std::string, BoundingBox> bodies_;
 
-  void list_callback(const hri_msgs::IdsListConstPtr& msg);
-  void bodyListCallback(const hri_msgs::IdsListConstPtr& msg);
-
-  void bb_callback(const hri_msgs::RegionOfInterestStampedConstPtr& msg,
-                   const std::string& id);
-
-  friend class BoundingBox;
+  hri::HRIListener hri_listener;
+  cv_bridge::CvImagePtr cvBridge_;
 };
 
 }  // namespace rviz

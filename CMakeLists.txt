@@ -7,6 +7,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rviz
   hri_msgs
+  hri
   sensor_msgs
   cv_bridge
   tf2

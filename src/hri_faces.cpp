@@ -52,25 +52,28 @@
 #include <rviz/validate_floats.h>
 #include <sensor_msgs/RegionOfInterest.h>
 #include <sensor_msgs/image_encodings.h>
+#include <stdlib.h>  // srand, rand
 
 #include <boost/bind.hpp>
 #include <opencv2/opencv.hpp>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
-namespace rviz {
+using namespace std;
 
-BoundingBox::BoundingBox(const std::string& ns, const std::string& id,
-                         ros::NodeHandle& nh, int R, int G, int B,
-                         FacesDisplay* obj)
-    : R_(R), G_(G), B_(B) {
-  std::string topic = ns + id + "/roi";
-  roi_sub_ = nh.subscribe<hri_msgs::RegionOfInterestStamped>(
-      topic, 1,
-      std::bind(&FacesDisplay::bb_callback, obj, std::placeholders::_1, id));
-  width = 0;
+cv::Scalar get_color_from_id(std::string id) {
+  hash<string> hasher;
+  size_t hash = hasher(id);
+  srand(hash);
+  cv::Mat3f hsv(cv::Vec3f(rand() % 360, 0.7, 0.8));
+  cv::Mat3f bgr;
+  cv::cvtColor(hsv, bgr, cv::COLOR_HSV2BGR);
+  return cv::Scalar(bgr(0, 0) * 255);
 }
+
+namespace rviz {
 
 FacesDisplay::FacesDisplay() : ImageDisplayBase(), texture_() {
   normalize_property_ =
@@ -93,15 +96,15 @@ FacesDisplay::FacesDisplay() : ImageDisplayBase(), texture_() {
       SLOT(updateNormalizeOptions()));
 
   show_faces_property_ = new BoolProperty(
-      "Faces", true, "If set to true, show faces bounding boxes.", this,
-      SLOT(updateShowFaces()));
+      "Show face RoIs", true, "If set to true, show faces bounding boxes.",
+      this, SLOT(updateShowFaces()));
 
   show_bodies_property_ = new BoolProperty(
-      "Bodies", false, "If set to true, show bodies bounding boxes.", this,
-      SLOT(updateShowBodies()));
+      "Show body RoIs", true, "If set to true, show bodies bounding boxes.",
+      this, SLOT(updateShowBodies()));
 
   show_faces_ = true;
-  show_bodies_ = false;
+  show_bodies_ = true;
   got_float_image_ = false;
 }
 
@@ -113,14 +116,6 @@ void FacesDisplay::onInitialize() {
     ss << "FacesDisplay" << count++;
     img_scene_manager_ = Ogre::Root::getSingleton().createSceneManager(
         Ogre::ST_GENERIC, ss.str());
-
-    faces_list_sub_ = update_nh_.subscribe("/humans/faces/tracked", 1,
-                                           &FacesDisplay::list_callback, this);
-    /*bodies_list_sub_ =
-      update_nh_.subscribe("/humans/bodies/tracked",
-                           1,
-                           &FacesDisplay::bodyListCallback,
-                           this);*/
   }
 
   img_scene_node_ =
@@ -273,137 +268,48 @@ void FacesDisplay::processMessage(const sensor_msgs::Image::ConstPtr& msg) {
     updateNormalizeOptions();
   }
 
-  if ((!show_faces_ && !show_bodies_) ||
-      ((faces_.size() == 0) && (bodies_.size() == 0))) {
+  if (!show_faces_ && !show_bodies_) {
     texture_.addMessage(msg);
     return;
   }
 
   cvBridge_ = cv_bridge::toCvCopy(msg);
 
-  if (faces_.size() > 0 && show_faces_) {
-    std::map<std::string, BoundingBox>::iterator it;
-    for (it = faces_.begin(); it != faces_.end(); ++it) {
-      if (it->second.bbInitialized()) {
-        cv::rectangle(cvBridge_->image, it->second.getRect(),
-                      it->second.getRGB(), 5);
+  if (show_faces_) {
+    auto faces = hri_listener.getFaces();
+    for (auto const& face : faces) {
+      if (auto face_ptr =
+              face.second.lock()) {  // ensure the face is still here
+        auto roi = face_ptr->getRoI();
+
+        if (roi) {  // has a RoI being published for this face?
+          cv::rectangle(cvBridge_->image,
+                        cv::Rect(roi->roi.x_offset, roi->roi.y_offset,
+                                 roi->roi.width, roi->roi.height),
+                        get_color_from_id(face.first), 5);
+        }
       }
     }
   }
 
-  if (bodies_.size() > 0 && show_bodies_) {
-    std::map<std::string, BoundingBox>::iterator it;
-    for (it = bodies_.begin(); it != bodies_.end(); ++it) {
-      if (it->second.bbInitialized()) {
-        cv::rectangle(cvBridge_->image, it->second.getRect(),
-                      it->second.getRGB(), 5);
+  if (show_bodies_) {
+    auto bodies = hri_listener.getBodies();
+    for (auto const& body : bodies) {
+      if (auto body_ptr =
+              body.second.lock()) {  // ensure the body is still here
+        auto roi = body_ptr->getRoI();
+
+        if (roi) {  // has a RoI being published for this body?
+          cv::rectangle(cvBridge_->image,
+                        cv::Rect(roi->roi.x_offset, roi->roi.y_offset,
+                                 roi->roi.width, roi->roi.height),
+                        get_color_from_id(body.first), 5);
+        }
       }
     }
   }
 
   texture_.addMessage(cvBridge_->toImageMsg());
-}
-
-void FacesDisplay::list_callback(const hri_msgs::IdsListConstPtr& msg) {
-  if (ros::ok()) {
-    ids_ = msg->ids;
-
-    // Check for faces that are no more in the list
-    // Remove them from the map
-
-    std::map<std::string, BoundingBox>::iterator itF;
-    for (itF = faces_.begin(); itF != faces_.end();) {
-      if (std::find(ids_.begin(), ids_.end(), itF->first) == ids_.end()) {
-        itF->second.shutdown();
-        faces_.erase((itF++)->first);
-      } else
-        ++itF;
-    }
-
-    // Check for new faces
-    // Create a bounding box message and insert it in the map
-
-    std::vector<std::string>::iterator itS;
-    for (itS = ids_.begin(); itS != ids_.end(); ++itS) {
-      if (faces_.find(*itS) == faces_.end()) {
-        std::string id = *itS;
-        faces_.insert(std::pair<std::string, BoundingBox>(
-            id, BoundingBox("/humans/faces/", id, update_nh_, std::rand() % 256,
-                            std::rand() % 256, std::rand() % 256, this)));
-      }
-    }
-  }
-}
-
-void FacesDisplay::bodyListCallback(const hri_msgs::IdsListConstPtr& msg) {
-  ROS_WARN("Body list processing");
-
-  if (ros::ok()) {
-    ROS_WARN("Inside");
-    body_ids_ = msg->ids;
-
-    std::cout << "Old number of bodies: " << bodies_.size()
-              << "\t New number of bodies: " << body_ids_.size() << std::endl;
-
-    // Check for faces that are no more in the list
-    // Remove them from the map
-
-    std::map<std::string, BoundingBox>::iterator itF;
-    for (itF = bodies_.begin(); itF != bodies_.end();) {
-      std::cout << itF->first << std::endl;
-      ROS_WARN("Inside 1");
-      // std::cout<<itF->first<<std::endl;
-      ROS_WARN("Inside 1.5");
-      if (std::find(body_ids_.begin(), body_ids_.end(), itF->first) ==
-          body_ids_.end()) {
-        ROS_WARN("Deleting Body: start");
-        itF->second.shutdown();
-        ROS_WARN("Deleting Body: mid");
-        bodies_.erase((itF++)->first);
-        ROS_WARN("Deleting Body: end");
-      } else
-        ++itF;
-    }
-    ROS_WARN("Outside 1");
-
-    // Check for new faces
-    // Create a bounding box message and insert it in the map
-
-    std::vector<std::string>::iterator itS;
-    for (itS = body_ids_.begin(); itS != body_ids_.end(); ++itS) {
-      ROS_WARN("Inside 2");
-      if (bodies_.find(*itS) == bodies_.end()) {
-        ROS_WARN("Inserting new body");
-        std::string id = *itS;
-        bodies_.insert(std::pair<std::string, BoundingBox>(
-            id,
-            BoundingBox("/humans/bodies/", id, update_nh_, std::rand() % 256,
-                        std::rand() % 256, std::rand() % 256, this)));
-      }
-    }
-    ROS_WARN("outside 2");
-  }
-  ROS_WARN("Out");
-}
-
-void FacesDisplay::bb_callback(
-    const hri_msgs::RegionOfInterestStampedConstPtr& msg,
-    const std::string& id) {
-  BoundingBox& face = faces_.find(id)->second;
-
-  face.x = msg->roi.x_offset;
-  face.y = msg->roi.y_offset;
-  face.width = msg->roi.width;
-  face.height = msg->roi.height;
-}
-
-bool FacesDisplay::checkBbConsistency(const int& image_height,
-                                      const int& image_width, const int& bb_x,
-                                      const int& bb_y, const int& bb_height,
-                                      const int& bb_width) const {
-  return (bb_x >= 0) && (bb_y >= 0) && (bb_height > 0) && (bb_width > 0) &&
-         ((bb_y + bb_height) < image_height) &&
-         ((bb_x + bb_width) < image_width);
 }
 
 }  // namespace rviz
