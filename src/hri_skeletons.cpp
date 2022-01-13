@@ -187,16 +187,6 @@ void HumansModelDisplay::initializeRobot(
 
     setStatus(StatusProperty::Ok, "URDF", "URDFs parsed OK");
     it->second->load(descr);
-    std::stringstream ss;
-    for (const auto& name_link_pair : it->second->getLinks()) {
-        const std::string& err = name_link_pair.second->getGeometryErrors();
-        if (!err.empty())
-            ss << "\n• for link '" << name_link_pair.first << "':\n" << err;
-    }
-    if (ss.tellp())
-        setStatus(
-            StatusProperty::Error, "URDF",
-            QString("Errors loading geometries:").append(ss.str().c_str()));
 
     it->second->update(
         TFLinkUpdater(context_->getFrameManager(),
