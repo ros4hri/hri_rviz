@@ -2,8 +2,8 @@
 Changelog for package hri_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.0 (2022-01-13)
+------------------
 
 * port the plugin to libhri; use colors generated from ID for bbs
 * Multi-Skeleton 3D visualization plugin
