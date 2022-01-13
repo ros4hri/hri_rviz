@@ -1,10 +1,13 @@
 <?xml version="1.0"?>
 <package format="3">
   <name>hri_rviz</name>
-  <version>0.1.0</version>
-  <description>The hri_rviz package</description>
-
-  <maintainer email="skadge@todo.todo">skadge</maintainer>
+  <version>0.0.1</version>
+  <description>
+  This package contains several rviz plugins to visualize HRI-related topics (like face/body region of interests, 3D skeletons...)
+  </description>
+  <maintainer email="severin.lemaignan@pal-robotics.com">Séverin Lemaignan</maintainer>
+  <author>Lorenzo Ferrini</author>
+  <author>Séverin Lemaignan</author>
 
 
   <license>TODO</license>
