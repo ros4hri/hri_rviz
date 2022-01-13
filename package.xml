@@ -16,14 +16,14 @@
   <depend>roscpp</depend>
   <depend>hri_msgs</depend>
   <depend>hri</depend>
+  <depend>cv_bridge</depend>
+  <depend>rviz</depend>
 
   <build_depend>qtbase5-dev</build_depend>
-  <build_depend>rviz</build_depend>
 
   <exec_depend>libqt5-core</exec_depend>
   <exec_depend>libqt5-gui</exec_depend>
   <exec_depend>libqt5-widgets</exec_depend>
-  <exec_depend>rviz</exec_depend>
 
   <export>
       <rviz plugin="${prefix}/plugin_description.xml"/>

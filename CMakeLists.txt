@@ -15,7 +15,10 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(OpenCV REQUIRED)
 catkin_package()
 
-include_directories(${catkin_INCLUDE_DIRS})
+include_directories(
+    SYSTEM
+    ${catkin_INCLUDE_DIRS})
+
 link_directories(${catkin_LIBRARY_DIRS})
 
 ## This setting causes Qt's "MOC" generation to happen automatically.
