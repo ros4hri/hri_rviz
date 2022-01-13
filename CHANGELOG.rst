@@ -2,6 +2,13 @@
 Changelog for package hri_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* remove code that relies on too-recent rviz APIs, to ensure compat with melodic/noetic
+* code formatting + PAL copyright
+* add missing dependencies + fix flags
+* Contributors: Séverin Lemaignan
+
 0.1.0 (2022-01-13)
 ------------------
 
