@@ -2,8 +2,8 @@
 Changelog for package hri_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.2 (2022-01-14)
+------------------
 * replace hri_msgs::RegionOfInterestStamped by sensor_msgs::RegionOfInterest
   Follows changes in hri_msgs 0.2.0
 * Contributors: Séverin Lemaignan
