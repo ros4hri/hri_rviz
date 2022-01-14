@@ -43,14 +43,12 @@
 #include <OGRE/OgreViewport.h>
 #include <cv_bridge/cv_bridge.h>
 #include <hri_msgs/IdsList.h>
-#include <hri_msgs/RegionOfInterestStamped.h>
 #include <image_transport/image_transport.h>
 #include <rviz/display_context.h>
 #include <rviz/frame_manager.h>
 #include <rviz/ogre_helpers/compatibility.h>
 #include <rviz/render_panel.h>
 #include <rviz/validate_floats.h>
-#include <sensor_msgs/RegionOfInterest.h>
 #include <sensor_msgs/image_encodings.h>
 #include <stdlib.h>  // srand, rand
 
@@ -282,10 +280,10 @@ void FacesDisplay::processMessage(const sensor_msgs::Image::ConstPtr& msg) {
         auto roi = face_ptr->getRoI();
 
         if (roi) {  // has a RoI being published for this face?
-          cv::rectangle(cvBridge_->image,
-                        cv::Rect(roi->roi.x_offset, roi->roi.y_offset,
-                                 roi->roi.width, roi->roi.height),
-                        get_color_from_id(face.first), 5);
+          cv::rectangle(
+              cvBridge_->image,
+              cv::Rect(roi->x_offset, roi->y_offset, roi->width, roi->height),
+              get_color_from_id(face.first), 5);
         }
       }
     }
@@ -299,10 +297,10 @@ void FacesDisplay::processMessage(const sensor_msgs::Image::ConstPtr& msg) {
         auto roi = body_ptr->getRoI();
 
         if (roi) {  // has a RoI being published for this body?
-          cv::rectangle(cvBridge_->image,
-                        cv::Rect(roi->roi.x_offset, roi->roi.y_offset,
-                                 roi->roi.width, roi->roi.height),
-                        get_color_from_id(body.first), 5);
+          cv::rectangle(
+              cvBridge_->image,
+              cv::Rect(roi->x_offset, roi->y_offset, roi->width, roi->height),
+              get_color_from_id(body.first), 5);
         }
       }
     }
