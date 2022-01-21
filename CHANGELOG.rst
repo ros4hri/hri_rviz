@@ -2,8 +2,8 @@
 Changelog for package hri_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.3 (2022-01-21)
+------------------
 * update to libhri 0.2.3
 * Plugin renaming: Faces --> Humans
 * Contributors: Séverin Lemaignan, lorenzoferrini
