@@ -27,8 +27,8 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef RVIZ_HRI_FACES_H
-#define RVIZ_HRI_FACES_H
+#ifndef RVIZ_HRI_HUMANS_H
+#define RVIZ_HRI_HUMANS_H
 
 #ifndef Q_MOC_RUN  // See: https://bugreports.qt-project.org/browse/QTBUG-22829
 #include <OGRE/OgreMaterial.h>
@@ -58,11 +58,11 @@ class Rectangle2D;
 }  // namespace Ogre
 
 namespace rviz {
-class FacesDisplay : public ImageDisplayBase {
+class HumansDisplay : public ImageDisplayBase {
   Q_OBJECT
  public:
-  FacesDisplay();
-  ~FacesDisplay() override;
+  HumansDisplay();
+  ~HumansDisplay() override;
 
   // Overrides from Display
   void onInitialize() override;

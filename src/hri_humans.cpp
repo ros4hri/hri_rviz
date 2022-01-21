@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include "hri_faces.hpp"
+#include "hri_humans.hpp"
 
 #include <OGRE/OgreCamera.h>
 #include <OGRE/OgreManualObject.h>
@@ -72,7 +72,7 @@ cv::Scalar get_color_from_id(std::string id) {
 }
 
 namespace rviz {
-FacesDisplay::FacesDisplay() : ImageDisplayBase(), texture_() {
+HumansDisplay::HumansDisplay() : ImageDisplayBase(), texture_() {
   normalize_property_ =
       new BoolProperty("Normalize Range", true,
                        "If set to true, will try to estimate the range of "
@@ -105,12 +105,12 @@ FacesDisplay::FacesDisplay() : ImageDisplayBase(), texture_() {
   got_float_image_ = false;
 }
 
-void FacesDisplay::onInitialize() {
+void HumansDisplay::onInitialize() {
   ImageDisplayBase::onInitialize();
   {
     static uint32_t count = 0;
     std::stringstream ss;
-    ss << "FacesDisplay" << count++;
+    ss << "HumansDisplay" << count++;
     img_scene_manager_ = Ogre::Root::getSingleton().createSceneManager(
         Ogre::ST_GENERIC, ss.str());
   }
@@ -121,7 +121,7 @@ void FacesDisplay::onInitialize() {
   {
     static int count = 0;
     std::stringstream ss;
-    ss << "FacesDisplayObject" << count++;
+    ss << "HumansDisplayObject" << count++;
 
     screen_rect_ = new Ogre::Rectangle2D(true);
     screen_rect_->setRenderQueueGroup(Ogre::RENDER_QUEUE_OVERLAY - 1);
@@ -165,7 +165,7 @@ void FacesDisplay::onInitialize() {
   updateNormalizeOptions();
 }
 
-FacesDisplay::~FacesDisplay() {
+HumansDisplay::~HumansDisplay() {
   if (initialized()) {
     delete render_panel_;
     delete screen_rect_;
@@ -174,26 +174,26 @@ FacesDisplay::~FacesDisplay() {
   }
 }
 
-void FacesDisplay::onEnable() {
+void HumansDisplay::onEnable() {
   ImageDisplayBase::subscribe();
   render_panel_->getRenderWindow()->setActive(true);
 }
 
-void FacesDisplay::onDisable() {
+void HumansDisplay::onDisable() {
   render_panel_->getRenderWindow()->setActive(false);
   ImageDisplayBase::unsubscribe();
   reset();
 }
 
-void FacesDisplay::updateShowFaces() {
+void HumansDisplay::updateShowFaces() {
   show_faces_ = show_faces_property_->getBool();
 }
 
-void FacesDisplay::updateShowBodies() {
+void HumansDisplay::updateShowBodies() {
   show_bodies_ = show_bodies_property_->getBool();
 }
 
-void FacesDisplay::updateNormalizeOptions() {
+void HumansDisplay::updateNormalizeOptions() {
   if (got_float_image_) {
     bool normalize = normalize_property_->getBool();
 
@@ -213,7 +213,7 @@ void FacesDisplay::updateNormalizeOptions() {
   }
 }
 
-void FacesDisplay::update(float wall_dt, float ros_dt) {
+void HumansDisplay::update(float wall_dt, float ros_dt) {
   Q_UNUSED(wall_dt)
   Q_UNUSED(ros_dt)
   try {
@@ -246,14 +246,14 @@ void FacesDisplay::update(float wall_dt, float ros_dt) {
   }
 }
 
-void FacesDisplay::reset() {
+void HumansDisplay::reset() {
   ImageDisplayBase::reset();
   texture_.clear();
   render_panel_->getCamera()->setPosition(
       Ogre::Vector3(999999, 999999, 999999));
 }
 
-void FacesDisplay::processMessage(const sensor_msgs::Image::ConstPtr& msg) {
+void HumansDisplay::processMessage(const sensor_msgs::Image::ConstPtr& msg) {
   bool got_float_image =
       msg->encoding == sensor_msgs::image_encodings::TYPE_32FC1 ||
       msg->encoding == sensor_msgs::image_encodings::TYPE_16UC1 ||
@@ -312,4 +312,4 @@ void FacesDisplay::processMessage(const sensor_msgs::Image::ConstPtr& msg) {
 }  // namespace rviz
 
 #include <pluginlib/class_list_macros.hpp>
-PLUGINLIB_EXPORT_CLASS(rviz::FacesDisplay, rviz::Display)
+PLUGINLIB_EXPORT_CLASS(rviz::HumansDisplay, rviz::Display)
