@@ -2,6 +2,12 @@
 Changelog for package hri_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* update to libhri 0.2.3
+* Plugin renaming: Faces --> Humans
+* Contributors: Séverin Lemaignan, lorenzoferrini
+
 0.1.2 (2022-01-14)
 ------------------
 * replace hri_msgs::RegionOfInterestStamped by sensor_msgs::RegionOfInterest
