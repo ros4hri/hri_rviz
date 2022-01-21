@@ -1,9 +1,9 @@
 <library path="lib/libhri_rviz">
-  <class name="hri_rviz/Faces"
-         type="rviz::FacesDisplay"
+  <class name="hri_rviz/Humans"
+         type="rviz::HumansDisplay"
          base_class_type="rviz::Display">
     <description>
-        An image diplayer to visualize the faces detected
+        An image diplayer to visualize the people detected
     </description>
     <message_type>sensor_msgs/Image</message_type>
     <message_type>sensor_msgs/CompressedImage</message_type>
@@ -13,7 +13,7 @@
          type="rviz::HumansModelDisplay"
          base_class_type="rviz::Display">
     <description>
-        A panel display to show HRI-related data (faces, skeletons...)
+        A multi-people 3D skeleton visualizer
     </description>
     <message_type>hri_msgs/IdsList</message_type>
   </class>
