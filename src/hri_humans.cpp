@@ -277,14 +277,8 @@ void HumansDisplay::processMessage(const sensor_msgs::Image::ConstPtr& msg) {
     for (auto const& face : faces) {
       if (auto face_ptr =
               face.second.lock()) {  // ensure the face is still here
-        auto roi = face_ptr->getRoI();
-
-        if (roi) {  // has a RoI being published for this face?
-          cv::rectangle(
-              cvBridge_->image,
-              cv::Rect(roi->x_offset, roi->y_offset, roi->width, roi->height),
-              get_color_from_id(face.first), 5);
-        }
+        auto roi = face_ptr->roi();
+        cv::rectangle(cvBridge_->image, roi, get_color_from_id(face.first), 5);
       }
     }
   }
@@ -294,14 +288,8 @@ void HumansDisplay::processMessage(const sensor_msgs::Image::ConstPtr& msg) {
     for (auto const& body : bodies) {
       if (auto body_ptr =
               body.second.lock()) {  // ensure the body is still here
-        auto roi = body_ptr->getRoI();
-
-        if (roi) {  // has a RoI being published for this body?
-          cv::rectangle(
-              cvBridge_->image,
-              cv::Rect(roi->x_offset, roi->y_offset, roi->width, roi->height),
-              get_color_from_id(body.first), 5);
-        }
+        auto roi = body_ptr->roi();
+        cv::rectangle(cvBridge_->image, roi, get_color_from_id(body.first), 5);
       }
     }
   }
