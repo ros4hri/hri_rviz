@@ -48,7 +48,7 @@ add_definitions(-DQT_NO_KEYWORDS)
 ## Here we specify the list of source files.
 ## The generated MOC files are included automatically as headers.
 set(SRC_FILES
-  src/hri_faces.cpp
+  src/hri_humans.cpp
   src/hri_skeletons.cpp
 )
 
