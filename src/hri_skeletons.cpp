@@ -106,22 +106,25 @@ void HumansModelDisplay::onInitialize() {
 void HumansModelDisplay::updateAlpha() {
   for (std::map<std::string, Robot*>::iterator it = humans_.begin();
        it != humans_.end(); it++)
-    it->second->setAlpha(alpha_property_->getFloat());
+    if(it->second != nullptr)
+      it->second->setAlpha(alpha_property_->getFloat());
   context_->queueRender();
 }
 
 void HumansModelDisplay::updateVisualVisible() {
   for (std::map<std::string, Robot*>::iterator it = humans_.begin();
        it != humans_.end(); it++)
-    it->second->setVisualVisible(visual_enabled_property_->getValue().toBool());
+    if(it->second != nullptr)
+      it->second->setVisualVisible(visual_enabled_property_->getValue().toBool());
   context_->queueRender();
 }
 
 void HumansModelDisplay::updateCollisionVisible() {
   for (std::map<std::string, Robot*>::iterator it = humans_.begin();
        it != humans_.end(); it++)
-    it->second->setVisualVisible(
-        collision_enabled_property_->getValue().toBool());
+    if(it->second != nullptr)
+      it->second->setVisualVisible(
+          collision_enabled_property_->getValue().toBool());
   context_->queueRender();
 }
 
@@ -134,20 +137,27 @@ void HumansModelDisplay::initializeRobot(
     std::map<std::string, Robot*>::iterator it) {
   context_->queueRender();
 
+  ROS_WARN("Entering");
+
   std::string description = "human_description_" + (it->first);
+  ROS_WARN("Entering 2");
   std::string content;
-  it->second = new Robot(scene_node_, context_, "Human: " + it->first, this);
+  //it->second = new Robot(scene_node_, context_, "Human: " + it->first, this); //Original position
 
   try {
     if (!update_nh_.getParam(description,
                              content))  // In content we get the string
                                         // representing the urdf model
     {
+      ROS_WARN("Entering 2.1");
       std::string loc;
-      if (update_nh_.searchParam(description, loc))
+      if (update_nh_.searchParam(description, loc)){
+        ROS_WARN("Entering 2.1.1.1");
         update_nh_.getParam(loc, content);
+      }
       else {
         clear();
+        ROS_WARN("Entering 2.1.1");
         setStatus(StatusProperty::Error, "URDF",
                   QString("Parameter [%1] does not exist, and was not found by "
                           "searchParam()")
@@ -155,6 +165,8 @@ void HumansModelDisplay::initializeRobot(
         // try again in a second
         // QTimer::singleShot(1000, this,
         // SLOT(updateRobotDescription()));
+        // initializeRobot(it);
+        ROS_WARN("Entering 2.2");
         return;
       }
     }
@@ -165,6 +177,10 @@ void HumansModelDisplay::initializeRobot(
                   .arg(QString::fromStdString(description), e.what()));
     return;
   }
+
+
+  ROS_WARN("Entering 3");
+
 
   if (content.empty()) {
     clear();
@@ -181,6 +197,10 @@ void HumansModelDisplay::initializeRobot(
     return;
   }
 
+  it->second = new Robot(scene_node_, context_, "Human: " + it->first, this);
+  ROS_WARN("Robot build succesfully 1");
+  std::cout<<"prova\n";
+
   setStatus(StatusProperty::Ok, "URDF", "URDFs parsed OK");
   it->second->load(descr);
 
@@ -188,19 +208,23 @@ void HumansModelDisplay::initializeRobot(
       TFLinkUpdater(context_->getFrameManager(),
                     boost::bind(linkUpdaterStatusFunction, _1, _2, _3, this),
                     tf_prefix_property_->getStdString()));
+
+  ROS_WARN("Robot build succesfully 2");
 }
 
 void HumansModelDisplay::onEnable() {
   for (std::map<std::string, Robot*>::iterator it = humans_.begin();
        it != humans_.end(); it++)
-    it->second->setVisible(true);
+    if(it->second != nullptr)
+      it->second->setVisible(true);
 }
 
 void HumansModelDisplay::onDisable() {
   // robot_->setVisible(false);
   for (std::map<std::string, Robot*>::iterator it = humans_.begin();
        it != humans_.end(); it++)
-    it->second->setVisible(false);
+    if(it->second != nullptr)
+      it->second->setVisible(false);
   // clear();
 }
 
@@ -212,10 +236,11 @@ void HumansModelDisplay::update(float wall_dt, float /*ros_dt*/) {
   if (has_new_transforms_ || update) {
     for (std::map<std::string, Robot*>::iterator it = humans_.begin();
          it != humans_.end(); it++)
-      it->second->update(TFLinkUpdater(
-          context_->getFrameManager(),
-          boost::bind(linkUpdaterStatusFunction, _1, _2, _3, this),
-          tf_prefix_property_->getStdString()));
+      if(it->second != nullptr)
+        it->second->update(TFLinkUpdater(
+            context_->getFrameManager(),
+            boost::bind(linkUpdaterStatusFunction, _1, _2, _3, this),
+            tf_prefix_property_->getStdString()));
     context_->queueRender();
 
     has_new_transforms_ = false;
@@ -229,7 +254,8 @@ void HumansModelDisplay::clear() {
   // robot_->clear();
   for (std::map<std::string, Robot*>::iterator it = humans_.begin();
        it != humans_.end(); it++)
-    it->second->clear();
+    if(it->second != nullptr)
+      it->second->clear();
   clearStatuses();
   robot_description_.clear();
 }
@@ -244,7 +270,7 @@ void HumansModelDisplay::idsCallback(const hri_msgs::IdsListConstPtr& msg) {
     ids_ = msg->ids;
 
     // Check for bodies that are no more in the list
-    // Remove them from the map
+    // Remove them from the map0
 
     std::map<std::string, Robot*>::iterator itH;
     for (itH = humans_.begin(); itH != humans_.end();) {
@@ -261,10 +287,16 @@ void HumansModelDisplay::idsCallback(const hri_msgs::IdsListConstPtr& msg) {
     std::pair<std::map<std::string, Robot*>::iterator, bool> ins;
     std::vector<std::string>::iterator itS;
     for (itS = ids_.begin(); itS != ids_.end(); ++itS) {
-      if (humans_.find(*itS) == humans_.end()) {
-        std::string id = *itS;
+      std::string id = *itS; 
+      auto human = humans_.find(id);
+      if (human == humans_.end()) {
         ins = humans_.insert(std::pair<std::string, Robot*>(id, nullptr));
-        if (ins.second) initializeRobot(ins.first);
+        ROS_WARN("Initializing robot");
+        if (ins.second) initializeRobot(ins.first); // Maybe I could remove this
+      }
+      else if(human->second == nullptr){
+        ROS_WARN("Found an unitialized robot");
+        initializeRobot(human);
       }
     }
   }
