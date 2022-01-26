@@ -199,7 +199,6 @@ void HumansModelDisplay::initializeRobot(
 
   it->second = new Robot(scene_node_, context_, "Human: " + it->first, this);
   ROS_WARN("Robot build succesfully 1");
-  std::cout<<"prova\n";
 
   setStatus(StatusProperty::Ok, "URDF", "URDFs parsed OK");
   it->second->load(descr);
@@ -234,13 +233,14 @@ void HumansModelDisplay::update(float wall_dt, float /*ros_dt*/) {
   bool update = rate < 0.0001f || time_since_last_transform_ >= rate;
 
   if (has_new_transforms_ || update) {
-    for (std::map<std::string, Robot*>::iterator it = humans_.begin();
-         it != humans_.end(); it++)
-      if(it->second != nullptr)
+    for (std::map<std::string, Robot*>::iterator it = humans_.begin(); it != humans_.end(); it++){
+      if(it->second != nullptr){
         it->second->update(TFLinkUpdater(
             context_->getFrameManager(),
             boost::bind(linkUpdaterStatusFunction, _1, _2, _3, this),
             tf_prefix_property_->getStdString()));
+      }
+    }
     context_->queueRender();
 
     has_new_transforms_ = false;
@@ -275,7 +275,8 @@ void HumansModelDisplay::idsCallback(const hri_msgs::IdsListConstPtr& msg) {
     std::map<std::string, Robot*>::iterator itH;
     for (itH = humans_.begin(); itH != humans_.end();) {
       if (std::find(ids_.begin(), ids_.end(), itH->first) == ids_.end()) {
-        delete itH->second;
+        if(itH->second)
+          delete itH->second;
         humans_.erase((itH++)->first);
       } else
         ++itH;
@@ -284,13 +285,11 @@ void HumansModelDisplay::idsCallback(const hri_msgs::IdsListConstPtr& msg) {
     // Check for new faces
     // Create a bounding box message and insert it in the map
 
-    std::pair<std::map<std::string, Robot*>::iterator, bool> ins;
-    std::vector<std::string>::iterator itS;
-    for (itS = ids_.begin(); itS != ids_.end(); ++itS) {
-      std::string id = *itS; 
+  
+    for (const auto& id : ids_) {
       auto human = humans_.find(id);
       if (human == humans_.end()) {
-        ins = humans_.insert(std::pair<std::string, Robot*>(id, nullptr));
+        auto ins = humans_.insert(std::pair<std::string, Robot*>(id, nullptr));
         ROS_WARN("Initializing robot");
         if (ins.second) initializeRobot(ins.first); // Maybe I could remove this
       }
