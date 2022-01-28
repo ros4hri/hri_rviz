@@ -137,54 +137,38 @@ void HumansModelDisplay::initializeRobot(
     std::map<std::string, Robot*>::iterator it) {
   context_->queueRender();
 
-  ROS_WARN("Entering");
-
   std::string description = "human_description_" + (it->first);
-  ROS_WARN("Entering 2");
   std::string content;
-  //it->second = new Robot(scene_node_, context_, "Human: " + it->first, this); //Original position
 
   try {
     if (!update_nh_.getParam(description,
                              content))  // In content we get the string
                                         // representing the urdf model
     {
-      ROS_WARN("Entering 2.1");
       std::string loc;
       if (update_nh_.searchParam(description, loc)){
-        ROS_WARN("Entering 2.1.1.1");
         update_nh_.getParam(loc, content);
       }
       else {
         clear();
-        ROS_WARN("Entering 2.1.1");
-        setStatus(StatusProperty::Error, "URDF",
+        setStatus(StatusProperty::Warn, "URDF",
                   QString("Parameter [%1] does not exist, and was not found by "
                           "searchParam()")
                       .arg(QString::fromStdString(description)));
-        // try again in a second
-        // QTimer::singleShot(1000, this,
-        // SLOT(updateRobotDescription()));
-        // initializeRobot(it);
-        ROS_WARN("Entering 2.2");
         return;
       }
     }
   } catch (const ros::InvalidNameException& e) {
     clear();
-    setStatus(StatusProperty::Error, "URDF",
+    setStatus(StatusProperty::Warn, "URDF",
               QString("Invalid parameter name: %1.\n%2")
                   .arg(QString::fromStdString(description), e.what()));
     return;
   }
 
-
-  ROS_WARN("Entering 3");
-
-
   if (content.empty()) {
     clear();
-    setStatus(StatusProperty::Error, "URDF", "URDF is empty");
+    setStatus(StatusProperty::Warn, "URDF", "URDF is empty");
     return;
   }
 
@@ -193,12 +177,11 @@ void HumansModelDisplay::initializeRobot(
   urdf::Model descr;
   if (!descr.initString(robot_description)) {
     clear();
-    setStatus(StatusProperty::Error, "URDF", "Failed to parse URDF model");
+    setStatus(StatusProperty::Warn, "URDF", "Failed to parse URDF model");
     return;
   }
 
   it->second = new Robot(scene_node_, context_, "Human: " + it->first, this);
-  ROS_WARN("Robot build succesfully 1");
 
   setStatus(StatusProperty::Ok, "URDF", "URDFs parsed OK");
   it->second->load(descr);
@@ -207,8 +190,6 @@ void HumansModelDisplay::initializeRobot(
       TFLinkUpdater(context_->getFrameManager(),
                     boost::bind(linkUpdaterStatusFunction, _1, _2, _3, this),
                     tf_prefix_property_->getStdString()));
-
-  ROS_WARN("Robot build succesfully 2");
 }
 
 void HumansModelDisplay::onEnable() {
@@ -289,13 +270,12 @@ void HumansModelDisplay::idsCallback(const hri_msgs::IdsListConstPtr& msg) {
     for (const auto& id : ids_) {
       auto human = humans_.find(id);
       if (human == humans_.end()) {
-        auto ins = humans_.insert(std::pair<std::string, Robot*>(id, nullptr));
-        ROS_WARN("Initializing robot");
-        if (ins.second) initializeRobot(ins.first); // Maybe I could remove this
-      }
-      else if(human->second == nullptr){
-        ROS_WARN("Found an unitialized robot");
-        initializeRobot(human);
+        std::string human_description = "human_description_"+id;
+        if(update_nh_.hasParam(human_description)){
+          auto ins = humans_.insert(std::pair<std::string, Robot*>(id, nullptr));
+          ROS_WARN("Initializing robot");
+          if (ins.second) initializeRobot(ins.first); // Maybe I could remove this
+        }    
       }
     }
   }
