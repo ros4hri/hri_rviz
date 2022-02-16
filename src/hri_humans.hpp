@@ -73,6 +73,7 @@ class HumansDisplay : public ImageDisplayBase {
   virtual void updateNormalizeOptions();
   void updateShowFaces();
   void updateShowBodies();
+  void updateShowFacialLandmarks(); 
 
  protected:
   // overrides from Display
@@ -97,12 +98,13 @@ class HumansDisplay : public ImageDisplayBase {
 
   BoolProperty* normalize_property_;
   BoolProperty* show_faces_property_;
+  BoolProperty* show_facial_landmarks_property_;
   BoolProperty* show_bodies_property_;
   FloatProperty* min_property_;
   FloatProperty* max_property_;
   IntProperty* median_buffer_size_property_;
   bool got_float_image_;
-  bool show_faces_, show_bodies_;
+  bool show_faces_, show_facial_landmarks_, show_bodies_;
 
   hri::HRIListener hri_listener;
   cv_bridge::CvImagePtr cvBridge_;
