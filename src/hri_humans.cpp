@@ -281,26 +281,21 @@ void HumansDisplay::processMessage(const sensor_msgs::Image::ConstPtr& msg) {
 
   cvBridge_ = cv_bridge::toCvCopy(msg);
 
-  if (show_faces_) {
+  if (show_faces_ || show_facial_landmarks_) {
     auto faces = hri_listener.getFaces();
     for (auto const& face : faces) {
       if (auto face_ptr =
               face.second.lock()) {  // ensure the face is still here
-        auto roi = face_ptr->roi();
-        cv::rectangle(cvBridge_->image, roi, get_color_from_id(face.first), 5);
-      }
-    }
-  }
-
-  if (show_facial_landmarks_) {
-    auto faces = hri_listener.getFaces();
-    for (auto const& face : faces) {
-      if (auto face_ptr =
-              face.second.lock()) {  // ensure the face is still here
-        auto landmarks = *(face_ptr->facialLandmarks()); // boost::optional
-        for(auto landmark : landmarks){
-          ROS_WARN("Printing");
-          cv::circle(cvBridge_->image, cv::Point(landmark.x, landmark.y), 5, get_color_from_id(face.first), cv::FILLED);
+        if(show_faces_){
+          auto roi = face_ptr->roi();
+          cv::rectangle(cvBridge_->image, roi, get_color_from_id(face.first), 5);
+        }
+        if(show_facial_landmarks_){
+          auto landmarks = *(face_ptr->facialLandmarks()); // boost::optional
+          for(auto landmark : landmarks){
+            if(landmark.x > 0 && landmark.y > 0)
+              cv::circle(cvBridge_->image, cv::Point(landmark.x, landmark.y), 5, get_color_from_id(face.first), cv::FILLED);
+          }
         }
       }
     }
