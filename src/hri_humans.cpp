@@ -293,7 +293,7 @@ void HumansDisplay::processMessage(const sensor_msgs::Image::ConstPtr& msg) {
         if(show_facial_landmarks_){
           auto landmarks = *(face_ptr->facialLandmarks()); // boost::optional
           for(auto landmark : landmarks){
-            if(landmark.x > 0 && landmark.y > 0)
+            if(landmark.x > 0 || landmark.y > 0)
               cv::circle(cvBridge_->image, cv::Point(landmark.x, landmark.y), 5, get_color_from_id(face.first), cv::FILLED);
           }
         }

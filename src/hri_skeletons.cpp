@@ -91,9 +91,9 @@ HumansModelDisplay::HumansModelDisplay()
 
 HumansModelDisplay::~HumansModelDisplay() {
   if (initialized()) {
-    for (std::map<std::string, Robot*>::iterator it = humans_.begin();
+    for (std::map<std::string, rviz::RobotPtr>::iterator it = humans_.begin();
          it != humans_.end(); it++)
-      delete it->second;
+      it->second = nullptr;
   }
 }
 
@@ -104,7 +104,7 @@ void HumansModelDisplay::onInitialize() {
 }
 
 void HumansModelDisplay::updateAlpha() {
-  for (std::map<std::string, Robot*>::iterator it = humans_.begin();
+  for (std::map<std::string, rviz::RobotPtr>::iterator it = humans_.begin();
        it != humans_.end(); it++)
     if(it->second != nullptr)
       it->second->setAlpha(alpha_property_->getFloat());
@@ -112,7 +112,7 @@ void HumansModelDisplay::updateAlpha() {
 }
 
 void HumansModelDisplay::updateVisualVisible() {
-  for (std::map<std::string, Robot*>::iterator it = humans_.begin();
+  for (std::map<std::string, rviz::RobotPtr>::iterator it = humans_.begin();
        it != humans_.end(); it++)
     if(it->second != nullptr)
       it->second->setVisualVisible(visual_enabled_property_->getValue().toBool());
@@ -120,7 +120,7 @@ void HumansModelDisplay::updateVisualVisible() {
 }
 
 void HumansModelDisplay::updateCollisionVisible() {
-  for (std::map<std::string, Robot*>::iterator it = humans_.begin();
+  for (std::map<std::string, rviz::RobotPtr>::iterator it = humans_.begin();
        it != humans_.end(); it++)
     if(it->second != nullptr)
       it->second->setVisualVisible(
@@ -134,7 +134,7 @@ void HumansModelDisplay::updateTfPrefix() {
 }
 
 void HumansModelDisplay::initializeRobot(
-    std::map<std::string, Robot*>::iterator it) {
+    std::map<std::string, rviz::RobotPtr>::iterator it) {
   context_->queueRender();
 
   std::string description = "human_description_" + (it->first);
@@ -181,7 +181,7 @@ void HumansModelDisplay::initializeRobot(
     return;
   }
 
-  it->second = new Robot(scene_node_, context_, "Human: " + it->first, this);
+  it->second = RobotPtr((new Robot(scene_node_, context_, "Human: " + it->first, this)));
 
   setStatus(StatusProperty::Ok, "URDF", "URDFs parsed OK");
   it->second->load(descr);
@@ -193,7 +193,7 @@ void HumansModelDisplay::initializeRobot(
 }
 
 void HumansModelDisplay::onEnable() {
-  for (std::map<std::string, Robot*>::iterator it = humans_.begin();
+  for (std::map<std::string, rviz::RobotPtr>::iterator it = humans_.begin();
        it != humans_.end(); it++)
     if(it->second != nullptr)
       it->second->setVisible(true);
@@ -201,7 +201,7 @@ void HumansModelDisplay::onEnable() {
 
 void HumansModelDisplay::onDisable() {
   // robot_->setVisible(false);
-  for (std::map<std::string, Robot*>::iterator it = humans_.begin();
+  for (std::map<std::string, rviz::RobotPtr>::iterator it = humans_.begin();
        it != humans_.end(); it++)
     if(it->second != nullptr)
       it->second->setVisible(false);
@@ -214,7 +214,7 @@ void HumansModelDisplay::update(float wall_dt, float /*ros_dt*/) {
   bool update = rate < 0.0001f || time_since_last_transform_ >= rate;
 
   if (has_new_transforms_ || update) {
-    for (std::map<std::string, Robot*>::iterator it = humans_.begin(); it != humans_.end(); it++){
+    for (std::map<std::string, rviz::RobotPtr>::iterator it = humans_.begin(); it != humans_.end(); it++){
       if(it->second != nullptr){
         it->second->update(TFLinkUpdater(
             context_->getFrameManager(),
@@ -233,7 +233,7 @@ void HumansModelDisplay::fixedFrameChanged() { has_new_transforms_ = true; }
 
 void HumansModelDisplay::clear() {
   // robot_->clear();
-  for (std::map<std::string, Robot*>::iterator it = humans_.begin();
+  for (std::map<std::string, rviz::RobotPtr>::iterator it = humans_.begin();
        it != humans_.end(); it++)
     if(it->second != nullptr)
       it->second->clear();
@@ -253,11 +253,11 @@ void HumansModelDisplay::idsCallback(const hri_msgs::IdsListConstPtr& msg) {
     // Check for bodies that are no more in the list
     // Remove them from the map0
 
-    std::map<std::string, Robot*>::iterator itH;
+    std::map<std::string, rviz::RobotPtr>::iterator itH;
     for (itH = humans_.begin(); itH != humans_.end();) {
       if (std::find(ids_.begin(), ids_.end(), itH->first) == ids_.end()) {
         if(itH->second)
-          delete itH->second;
+          itH->second = nullptr;
         humans_.erase((itH++)->first);
       } else
         ++itH;
@@ -272,7 +272,7 @@ void HumansModelDisplay::idsCallback(const hri_msgs::IdsListConstPtr& msg) {
       if (human == humans_.end()) {
         std::string human_description = "human_description_"+id;
         if(update_nh_.hasParam(human_description)){
-          auto ins = humans_.insert(std::pair<std::string, Robot*>(id, nullptr));
+          auto ins = humans_.insert(std::pair<std::string, rviz::RobotPtr>(id, nullptr));
           ROS_WARN("Initializing robot");
           if (ins.second) initializeRobot(ins.first); // Maybe I could remove this
         }    

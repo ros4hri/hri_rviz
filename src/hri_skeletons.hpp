@@ -51,6 +51,8 @@ class Property;
 class Robot;
 class StringProperty;
 
+typedef std::shared_ptr<Robot> RobotPtr;
+
 /**
  * \class HumansModelDisplay
  * \brief Uses a robot xml description to display the pieces of a robot at the
@@ -88,8 +90,6 @@ class HumansModelDisplay : public Display {
   void onEnable() override;
   void onDisable() override;
 
-  // Robot* robot_; ///< Handles actually drawing the robot
-
   bool has_new_transforms_;  ///< Callback sets this to tell our update
                              ///< function it needs to update the
                              /// transforms
@@ -104,16 +104,16 @@ class HumansModelDisplay : public Display {
   FloatProperty* alpha_property_;
   StringProperty* tf_prefix_property_;
 
-  std::map<std::string, Robot*> humans_;
+  std::map<std::string, RobotPtr> humans_;
 
  private:
   std::vector<std::string> ids_;
   ros::Subscriber idsSub_;  // Subscriber for the ids list
 
   void idsCallback(const hri_msgs::IdsListConstPtr& msg);
-  void initializeRobot(std::map<std::string, Robot*>::iterator it);
+  void initializeRobot(std::map<std::string, RobotPtr>::iterator it);
 };
-
+  
 }  // namespace rviz
 
 #endif
