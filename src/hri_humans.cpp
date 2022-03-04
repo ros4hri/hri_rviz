@@ -104,10 +104,17 @@ HumansDisplay::HumansDisplay() : ImageDisplayBase(), texture_() {
       "Show body RoIs", true, "If set to true, show bodies bounding boxes.",
       this, SLOT(updateShowBodies()));
 
+  show_active_users_property_ = new BoolProperty(
+      "Show active users", true, "If set to true, show highlight in blue active users' faces.",
+      this, SLOT(updateShowActiveUsers()));
+
   show_faces_ = true;
   show_facial_landmarks_ = true;
   show_bodies_ = true;
+  show_active_users_ = true;
   got_float_image_ = false;
+
+  activeFacesSub_ = update_nh_.subscribe("/active_users", 10, &HumansDisplay::activeFacesCb, this);
 }
 
 void HumansDisplay::onInitialize() {
@@ -200,6 +207,10 @@ void HumansDisplay::updateShowFacialLandmarks() {
 
 void HumansDisplay::updateShowBodies() {
   show_bodies_ = show_bodies_property_->getBool();
+}
+
+void HumansDisplay::updateShowActiveUsers() {
+  show_active_users_ = show_active_users_property_->getBool();
 }
 
 void HumansDisplay::updateNormalizeOptions() {
@@ -297,6 +308,15 @@ void HumansDisplay::processMessage(const sensor_msgs::Image::ConstPtr& msg) {
               cv::circle(cvBridge_->image, cv::Point(landmark.x, landmark.y), 5, get_color_from_id(face.first), cv::FILLED);
           }
         }
+        if(show_active_users_ && (std::find(activeFaces_.begin(), activeFaces_.end(), face_ptr->id()) != activeFaces_.end())){
+          auto roi = face_ptr->roi();
+          auto activeFaceRoi = roi;
+          activeFaceRoi.x += 5;
+          activeFaceRoi.y += 5;
+          activeFaceRoi.width -= 10;
+          activeFaceRoi.height -= 10;
+          cv::rectangle(cvBridge_->image, activeFaceRoi, cv::Scalar(0, 0, 255), 5);
+        }
       }
     }
   }
@@ -313,6 +333,10 @@ void HumansDisplay::processMessage(const sensor_msgs::Image::ConstPtr& msg) {
   }
 
   texture_.addMessage(cvBridge_->toImageMsg());
+}
+
+void HumansDisplay::activeFacesCb(const hri_msgs::IdsListConstPtr& msg){
+  activeFaces_ = msg->ids;
 }
 
 }  // namespace rviz
