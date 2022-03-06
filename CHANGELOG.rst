@@ -2,6 +2,13 @@
 Changelog for package hri_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Facial landmarks visualization
+* raw pointers to std::share_ptr
+* add basic README
+* Contributors: Séverin Lemaignan, lorenzoferrini
+
 0.1.3 (2022-01-21)
 ------------------
 * update to libhri 0.2.3
