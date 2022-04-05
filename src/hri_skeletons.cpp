@@ -87,6 +87,8 @@ HumansModelDisplay::HumansModelDisplay()
 
   idsSub_ = update_nh_.subscribe("/humans/bodies/tracked", 1,
                                  &HumansModelDisplay::idsCallback, this);
+
+  pluginEnabled_ = true;
 }
 
 HumansModelDisplay::~HumansModelDisplay() {
@@ -197,6 +199,7 @@ void HumansModelDisplay::onEnable() {
        it != humans_.end(); it++)
     if(it->second != nullptr)
       it->second->setVisible(true);
+  pluginEnabled_ = true;
 }
 
 void HumansModelDisplay::onDisable() {
@@ -205,7 +208,8 @@ void HumansModelDisplay::onDisable() {
        it != humans_.end(); it++)
     if(it->second != nullptr)
       it->second->setVisible(false);
-  // clear();
+  pluginEnabled_ = false;
+  //clear();
 }
 
 void HumansModelDisplay::update(float wall_dt, float /*ros_dt*/) {
@@ -247,7 +251,7 @@ void HumansModelDisplay::reset() {
 }
 
 void HumansModelDisplay::idsCallback(const hri_msgs::IdsListConstPtr& msg) {
-  if (ros::ok()) {
+  if (ros::ok() && pluginEnabled_) {
     ids_ = msg->ids;
 
     // Check for bodies that are no more in the list
