@@ -159,7 +159,7 @@ void FrameSelectionHandler::setOrientation(const Ogre::Quaternion& orientation)
 typedef std::set<FrameInfo*> S_FrameInfo;
 
 HRITFDisplay::HRITFDisplay() : Display(), update_timer_(0.0f), changing_single_frame_enabled_state_(false),
-  showFaces_(true), showGazes_(true), showBodies_(true) 
+  showFaces_(true), showGazes_(true), showSkeletons_(true) 
 {
   show_names_property_ =
       new BoolProperty("Show Names", true, "Whether or not names should be shown next to the frames.",
@@ -187,9 +187,9 @@ HRITFDisplay::HRITFDisplay() : Display(), update_timer_(0.0f), changing_single_f
       new BoolProperty("Show Gazes", true, "Whether or not the gaze_ frames should be displayed.", this,
                        SLOT(updateShowGazes()));
 
-  show_bodies_property_ =
-      new BoolProperty("Show Bodies", true, "Whether or not body-related frames should be displayed.", this,
-                       SLOT(updateShowBodies()));
+  show_skeletons_property_ =
+      new BoolProperty("Show Skeletons", true, "'Whether or not human skeleton frames should be displayed.", this,
+                       SLOT(updateshowSkeletons()));
 
   update_rate_property_ = new FloatProperty("Update Interval", 0,
                                             "The interval, in seconds, at which to update the frame "
@@ -325,8 +325,8 @@ void HRITFDisplay::updateShowGazes(){
   showGazes_ = show_gazes_property_->getBool();
 }
 
-void HRITFDisplay::updateShowBodies(){
-  showBodies_ = show_bodies_property_->getBool();
+void HRITFDisplay::updateshowSkeletons(){
+  showSkeletons_ = show_skeletons_property_->getBool();
 }
 
 void HRITFDisplay::updateShowArrows()

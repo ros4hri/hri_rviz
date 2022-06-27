@@ -86,7 +86,7 @@ private Q_SLOTS:
   void updateShowNames();
   void updateShowFaces();
   void updateShowGazes();
-  void updateShowBodies();
+  void updateshowSkeletons();
   void allEnabledChanged();
 
 private:
@@ -129,7 +129,7 @@ private:
 
   BoolProperty* show_faces_property_;
   BoolProperty* show_gazes_property_;
-  BoolProperty* show_bodies_property_;
+  BoolProperty* show_skeletons_property_;
 
   Property* frames_category_;
   Property* tree_category_;
@@ -137,7 +137,7 @@ private:
   bool changing_single_frame_enabled_state_;
   bool showFaces_;
   bool showGazes_;
-  bool showBodies_;
+  bool showSkeletons_;
 
   hri::HRIListener hri_listener_;
 
