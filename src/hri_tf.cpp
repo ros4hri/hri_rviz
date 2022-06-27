@@ -26,6 +26,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include <algorithm>
 
 #include <boost/bind/bind.hpp>
 
@@ -213,6 +214,33 @@ HRITFDisplay::HRITFDisplay() : Display(), update_timer_(0.0f), changing_single_f
 
   tree_category_ = new Property(
       "Tree", QVariant(), "A tree-view of the frames, showing the parent/child relationships.", this);
+
+  skeleton_components_.push_back("body");
+  skeleton_components_.push_back("head");
+  skeleton_components_.push_back("torso");
+  skeleton_components_.push_back("waist");
+  skeleton_components_.push_back("p_head");
+  skeleton_components_.push_back("y_head");
+  skeleton_components_.push_back("l_ankle");
+  skeleton_components_.push_back("l_elbow");
+  skeleton_components_.push_back("l_hip");
+  skeleton_components_.push_back("l_knee");
+  skeleton_components_.push_back("l_p_hip");
+  skeleton_components_.push_back("l_p_shoulder");
+  skeleton_components_.push_back("l_shoulder");
+  skeleton_components_.push_back("l_wrist");
+  skeleton_components_.push_back("l_y_hip");
+  skeleton_components_.push_back("l_y_shoulder");
+  skeleton_components_.push_back("r_ankle");
+  skeleton_components_.push_back("r_elbow");
+  skeleton_components_.push_back("r_hip");
+  skeleton_components_.push_back("r_knee");
+  skeleton_components_.push_back("r_p_hip");
+  skeleton_components_.push_back("r_p_shoulder");
+  skeleton_components_.push_back("r_shoulder");
+  skeleton_components_.push_back("r_wrist");
+  skeleton_components_.push_back("r_y_hip");
+  skeleton_components_.push_back("r_y_shoulder");
 }
 
 HRITFDisplay::~HRITFDisplay()
@@ -397,94 +425,67 @@ void HRITFDisplay::updateFrames()
 
   bool faceFound;
   bool gazeFound;
-  bool bodyFound;
-  bool lShoulderFound, lPShoulderFound, lYShoulderFound, rShoulderFound, rPShoulderFound, rYShoulderFound, shoulderFound;
-  bool waistFound;
-  bool torsoFound;
-  bool headFrameFound, pHeadFound, yHeadFound, headFound;
-  bool lHipFound, lPHipFound, lYHipFound, rHipFound, rPHipFound, rYHipFound, hipFound;
-  bool lElbowFound, lWristFound, lArmFound;
-  bool rElbowFound, rWristFound, rArmFound;
-  bool lKneeFound, lAnkleFound, lLegFound;
-  bool rKneeFound, rAnkleFound, rLegFound;
+  bool skeletonFound;  bool idFound;
 
   auto framesIt = frames.begin();
   while(framesIt != frames.end()){
-    faceFound = ((*framesIt).rfind("face_", 0) == 0) && showFaces_;
-    gazeFound = ((*framesIt).rfind("gaze_", 0) == 0) && showGazes_;
-
-    bodyFound = ((*framesIt).rfind("body_", 0) == 0) && showBodies_;
-
-    lShoulderFound = ((*framesIt).rfind("l_shoulder_", 0) == 0) && showBodies_;
-    lPShoulderFound = ((*framesIt).rfind("l_p_shoulder_", 0) == 0) && showBodies_;
-    lYShoulderFound = ((*framesIt).rfind("l_y_shoulder_", 0) == 0) && showBodies_;
-    rShoulderFound = ((*framesIt).rfind("r_shoulder_", 0) == 0) && showBodies_;
-    rPShoulderFound = ((*framesIt).rfind("r_p_shoulder_", 0) == 0) && showBodies_;
-    rYShoulderFound = ((*framesIt).rfind("r_y_shoulder_", 0) == 0) && showBodies_;
-    shoulderFound = lShoulderFound || lPShoulderFound || lYShoulderFound || rShoulderFound || rPShoulderFound || rYShoulderFound;
-    bodyFound = bodyFound || shoulderFound;
-
-    waistFound = ((*framesIt).rfind("waist_", 0) == 0) && showBodies_;
-    bodyFound = bodyFound || waistFound;
-
-    torsoFound = ((*framesIt).rfind("torso_", 0) == 0) && showBodies_;
-    bodyFound = bodyFound || torsoFound;
-
-    headFrameFound = ((*framesIt).rfind("head_", 0) == 0) && showBodies_;
-    pHeadFound = ((*framesIt).rfind("p_head_", 0) == 0) && showBodies_;
-    yHeadFound = ((*framesIt).rfind("y_head_", 0) == 0) && showBodies_;
-    headFound = headFrameFound || pHeadFound || yHeadFound;
-    bodyFound = bodyFound || headFound;
-
-    lHipFound = ((*framesIt).rfind("l_hip_", 0) == 0) && showBodies_;
-    lPHipFound = ((*framesIt).rfind("l_p_hip_", 0) == 0) && showBodies_;
-    lYHipFound = ((*framesIt).rfind("l_y_hip_", 0) == 0) && showBodies_;
-    rHipFound = ((*framesIt).rfind("r_hip_", 0) == 0) && showBodies_;
-    rPHipFound = ((*framesIt).rfind("r_p_hip_", 0) == 0) && showBodies_;
-    rYHipFound = ((*framesIt).rfind("r_y_hip_", 0) == 0) && showBodies_;
-    hipFound = lHipFound || lPHipFound || lYHipFound || rHipFound || rPHipFound || rYHipFound;
-    bodyFound = bodyFound || hipFound;
-
-    lElbowFound = ((*framesIt).rfind("l_elbow_", 0) == 0) && showBodies_;
-    lWristFound = ((*framesIt).rfind("l_wrist_", 0) == 0) && showBodies_;
-    lArmFound = lElbowFound || lWristFound;
-    bodyFound = bodyFound || lArmFound;
-
-    rElbowFound = ((*framesIt).rfind("r_elbow_", 0) == 0) && showBodies_;
-    rWristFound = ((*framesIt).rfind("r_wrist_", 0) == 0) && showBodies_;
-    rArmFound = rElbowFound || rWristFound;
-    bodyFound = bodyFound || rArmFound;
-
-    lKneeFound = ((*framesIt).rfind("l_knee_", 0) == 0) && showBodies_;
-    lAnkleFound = ((*framesIt).rfind("l_ankle_", 0) == 0) && showBodies_;
-    lLegFound = lKneeFound || lAnkleFound;
-    bodyFound = bodyFound || lLegFound;
-
-    rKneeFound = ((*framesIt).rfind("r_knee_", 0) == 0) && showBodies_;
-    rAnkleFound = ((*framesIt).rfind("r_ankle_", 0) == 0) && showBodies_;
-    rLegFound = rKneeFound || rAnkleFound;    
-    bodyFound = bodyFound || rLegFound;
-
-    if(!faceFound && !gazeFound && !bodyFound){
-      framesIt = frames.erase(framesIt);
-    }
-    else{
-      // The face should be among the detected ones
+    faceFound = ((*framesIt).rfind("face_", 0) == 0);
+    
+    if(showFaces_ && faceFound){
       id = (*framesIt).substr((*framesIt).size()-5);
-      if(faceFound || gazeFound){
-        if(faces.find(id) == faces.end()){
-          framesIt = frames.erase(framesIt);   
-        }
-        else
-          ++framesIt;
+      idFound = (faces.find(id) != faces.end()); // Checking if the face is among those currently tracked
+      if (idFound && showFaces_){
+        ++framesIt;
+      } else {
+        framesIt = frames.erase(framesIt);
       }
-      else{
-        if(bodies.find(id) == bodies.end()){
-          framesIt = frames.erase(framesIt);   
-        }
-        else
-          ++framesIt;
+      continue;
+    }
+
+    gazeFound = ((*framesIt).rfind("gaze_", 0) == 0);
+
+    if(showGazes_ && gazeFound){
+      id = (*framesIt).substr((*framesIt).size()-5);
+      idFound = (faces.find(id) != faces.end()); // Checking if the face is among those currently tracked
+      if (idFound && showGazes_){
+        ++framesIt;
+      } else {
+        framesIt = frames.erase(framesIt);
       }
+      continue;
+    }
+
+    // At this point, if the frame name follows the ROS4HRI frame convention,
+    // it must be a skeleton frame.
+
+    // First of all, it is to be confirmed that the frame follows the ROS4HRI
+    // naming convention. To do this, it is possible to check if the 
+    // frame name belongs to one of the skeleton frames.
+
+    std::string frameName = *framesIt;
+
+    // Smaller possible body component name = body_<body_id>
+    // Considering that the body id is 5 chars, then the 
+    // minimum size for a body component name is 10 chars
+    if (frameName.length() < 10){
+      framesIt = frames.erase(framesIt);
+      continue;
+    }  
+
+    std::string possibleSkeletonComponent = frameName.substr(0, frameName.length()-6);
+    skeletonFound = (std::find(skeleton_components_.begin(), skeleton_components_.end(), possibleSkeletonComponent) != skeleton_components_.end());
+    if(showSkeletons_ && skeletonFound){
+      id = (*framesIt).substr((*framesIt).size()-5);
+      idFound = (bodies.find(id) != bodies.end()); // Checking if the body is among those currently tracked
+      if (idFound){
+        ++framesIt;
+      } else {
+        framesIt = frames.erase(framesIt);
+      }
+      continue;
+    } else {
+      framesIt = frames.erase(framesIt);
+      continue;
     }
   }
 

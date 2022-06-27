@@ -141,6 +141,8 @@ private:
 
   hri::HRIListener hri_listener_;
 
+  std::vector<std::string> skeleton_components_;
+
   friend class FrameInfo;
 };
 
