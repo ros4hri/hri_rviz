@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2022, PAL Robotics S.L.
  * Copyright (c) 2012, Willow Garage, Inc.
  * All rights reserved.
  *
