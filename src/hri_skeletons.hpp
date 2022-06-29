@@ -89,6 +89,7 @@ class HumansModelDisplay : public Display {
   // overrides from Display
   void onEnable() override;
   void onDisable() override;
+  bool pluginEnabled_;
 
   bool has_new_transforms_;  ///< Callback sets this to tell our update
                              ///< function it needs to update the
