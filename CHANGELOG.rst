@@ -2,8 +2,8 @@
 Changelog for package hri_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.3.0 (2022-07-12)
+------------------
 * Added PAL Robotics copyright
 * Refactored skeleton frames testing
   The new version takes a frame name, verifies if it has more than
