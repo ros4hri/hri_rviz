@@ -2,8 +2,8 @@
 Changelog for package hri_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.3.1 (2022-07-12)
+------------------
 * set license to BSD
 * Contributors: Séverin Lemaignan
 
