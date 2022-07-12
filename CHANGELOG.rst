@@ -2,6 +2,11 @@
 Changelog for package hri_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* set license to BSD
+* Contributors: Séverin Lemaignan
+
 0.3.0 (2022-07-12)
 ------------------
 * Added PAL Robotics copyright
