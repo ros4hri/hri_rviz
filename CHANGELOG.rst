@@ -2,6 +2,24 @@
 Changelog for package hri_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Added PAL Robotics copyright
+* Refactored skeleton frames testing
+  The new version takes a frame name, verifies if it has more than
+  the minimum number of characters for a skeleton frame, checks
+  if the name without the last 5 characters belongs to the skeleton
+  ROS4HRI naming convention and if it belongs to a currently tracked
+  body.
+* bodies -> skeletons
+  Bodies frames are now referenced as skeleton frame, for clarity.
+* Redefined class name for the plugin
+  To avoid confusion with the already existing TF plugin, the
+  plugin will now be visualized as TF (HRI) in rviz
+* First complete hri_tf version
+* Fixed skeletons appearing when plugin was disabled
+* Contributors: Séverin Lemaignan, lorenzoferrini
+
 0.2.0 (2022-03-06)
 ------------------
 * Facial landmarks visualization
