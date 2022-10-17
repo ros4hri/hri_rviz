@@ -36,6 +36,7 @@
 #include <OGRE/OgreSharedPtr.h>
 #include <cv_bridge/cv_bridge.h>
 #include <hri_msgs/IdsList.h>
+#include <hri_msgs/NormalizedPointOfInterest2D.h>
 
 #include <QObject>
 #include <map>
@@ -73,12 +74,16 @@ class HumansDisplay : public ImageDisplayBase {
   virtual void updateNormalizeOptions();
   void updateShowFaces();
   void updateShowBodies();
-  void updateShowFacialLandmarks(); 
+  void updateShowFacialLandmarks();
+  void updateShowSkeletons();   
 
  protected:
   // overrides from Display
   void onEnable() override;
   void onDisable() override;
+
+  // skeleton drawing function
+  void drawSkeleton(std::string id, int width, int height, std::vector<hri_msgs::NormalizedPointOfInterest2D>& skeleton);
 
   /* This is called by incomingMessage(). */
   void processMessage(const sensor_msgs::Image::ConstPtr& msg) override;
@@ -100,11 +105,12 @@ class HumansDisplay : public ImageDisplayBase {
   BoolProperty* show_faces_property_;
   BoolProperty* show_facial_landmarks_property_;
   BoolProperty* show_bodies_property_;
+  BoolProperty* show_skeletons_property_;
   FloatProperty* min_property_;
   FloatProperty* max_property_;
   IntProperty* median_buffer_size_property_;
   bool got_float_image_;
-  bool show_faces_, show_facial_landmarks_, show_bodies_;
+  bool show_faces_, show_facial_landmarks_, show_bodies_, show_skeletons_;
 
   hri::HRIListener hri_listener;
   cv_bridge::CvImagePtr cvBridge_;
