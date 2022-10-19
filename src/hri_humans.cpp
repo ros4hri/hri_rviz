@@ -396,24 +396,19 @@ void HumansDisplay::processMessage(const sensor_msgs::Image::ConstPtr& msg) {
     }
   }
 
-  if (show_bodies_) {
+  if (show_bodies_ || show_skeletons_) {
     auto bodies = hri_listener.getBodies();
     for (auto const& body : bodies) {
       if (auto body_ptr =
               body.second.lock()) {  // ensure the body is still here
-        auto roi = body_ptr->roi();
-        cv::rectangle(cvBridge_->image, roi, get_color_from_id(body.first), 5);
-      }
-    }
-  }
-
-  if (show_skeletons_){
-    auto bodies = hri_listener.getBodies();
-    for (auto const& body : bodies) {
-      if (auto body_ptr =
-              body.second.lock()) {  // ensure the body is still here
-        auto skeleton = body_ptr->skeleton();
-        drawSkeleton(body.first, msg->width, msg->height, skeleton);
+        if (show_bodies_){
+          auto roi = body_ptr->roi();
+          cv::rectangle(cvBridge_->image, roi, get_color_from_id(body.first), 5);
+        }
+        if (show_skeletons_){
+          auto skeleton = body_ptr->skeleton();
+          drawSkeleton(body.first, msg->width, msg->height, skeleton);
+        }
       }
     }
   }
