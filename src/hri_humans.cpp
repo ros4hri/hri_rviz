@@ -63,6 +63,8 @@
 
 #define SKELETON_POINTS 18
 
+#define JOINT_RADIUS 8
+
 using namespace std;
 
 cv::Scalar get_color_from_id(std::string id) {
@@ -295,41 +297,67 @@ void HumansDisplay::drawSkeleton(std::string id, int width, int height, std::vec
     int neckX = clip((int)(skeleton[hri_msgs::Skeleton2D::NECK].x*width), 0, width);
     int neckY = clip((int)(skeleton[hri_msgs::Skeleton2D::NECK].y*height), 0, height);
 
+    cv::circle(cvBridge_->image, cv::Point(neckX, neckY), JOINT_RADIUS, skeletonColor, cv::FILLED);
+
     int rightShoulderX = clip((int)(skeleton[hri_msgs::Skeleton2D::RIGHT_SHOULDER].x*width), 0, width);
     int rightShoulderY = clip((int)(skeleton[hri_msgs::Skeleton2D::RIGHT_SHOULDER].y*height), 0, height);
+
+    cv::circle(cvBridge_->image, cv::Point(rightShoulderX, rightShoulderY), JOINT_RADIUS, skeletonColor, cv::FILLED);
 
     int rightHipX = clip((int)(skeleton[hri_msgs::Skeleton2D::RIGHT_HIP].x*width), 0, width);
     int rightHipY = clip((int)(skeleton[hri_msgs::Skeleton2D::RIGHT_HIP].y*height), 0, height);
 
+    cv::circle(cvBridge_->image, cv::Point(rightHipX, rightHipY), JOINT_RADIUS, skeletonColor, cv::FILLED);    
+
     int leftHipX = clip((int)(skeleton[hri_msgs::Skeleton2D::LEFT_HIP].x*width), 0, width);
     int leftHipY = clip((int)(skeleton[hri_msgs::Skeleton2D::LEFT_HIP].y*height), 0, height);
+
+    cv::circle(cvBridge_->image, cv::Point(leftHipX, leftHipY), JOINT_RADIUS, skeletonColor, cv::FILLED);
 
     int leftShoulderX = clip((int)(skeleton[hri_msgs::Skeleton2D::LEFT_SHOULDER].x*width), 0, width);
     int leftShoulderY = clip((int)(skeleton[hri_msgs::Skeleton2D::LEFT_SHOULDER].y*height), 0, height);
 
+    cv::circle(cvBridge_->image, cv::Point(leftShoulderX, leftShoulderY), JOINT_RADIUS, skeletonColor, cv::FILLED);
+
     int rightElbowX = clip((int)(skeleton[hri_msgs::Skeleton2D::RIGHT_ELBOW].x*width), 0, width);
     int rightElbowY = clip((int)(skeleton[hri_msgs::Skeleton2D::RIGHT_ELBOW].y*height), 0, height);
+
+    cv::circle(cvBridge_->image, cv::Point(rightElbowX, rightElbowY), JOINT_RADIUS, skeletonColor, cv::FILLED);
 
     int rightWristX = clip((int)(skeleton[hri_msgs::Skeleton2D::RIGHT_WRIST].x*width), 0, width);
     int rightWristY = clip((int)(skeleton[hri_msgs::Skeleton2D::RIGHT_WRIST].y*height), 0, height);
 
+    cv::circle(cvBridge_->image, cv::Point(rightWristX, rightWristY), JOINT_RADIUS, skeletonColor, cv::FILLED);
+
     int leftElbowX = clip((int)(skeleton[hri_msgs::Skeleton2D::LEFT_ELBOW].x*width), 0, width);
     int leftElbowY = clip((int)(skeleton[hri_msgs::Skeleton2D::LEFT_ELBOW].y*height), 0, height);
+
+    cv::circle(cvBridge_->image, cv::Point(leftElbowX, leftElbowY), JOINT_RADIUS, skeletonColor, cv::FILLED);
 
     int leftWristX = clip((int)(skeleton[hri_msgs::Skeleton2D::LEFT_WRIST].x*width), 0, width);
     int leftWristY = clip((int)(skeleton[hri_msgs::Skeleton2D::LEFT_WRIST].y*height), 0, height);
 
+    cv::circle(cvBridge_->image, cv::Point(leftWristX, leftWristY), JOINT_RADIUS, skeletonColor, cv::FILLED);
+
     int rightKneeX = clip((int)(skeleton[hri_msgs::Skeleton2D::RIGHT_KNEE].x*width), 0, width);
     int rightKneeY = clip((int)(skeleton[hri_msgs::Skeleton2D::RIGHT_KNEE].y*height), 0, height);
+
+    cv::circle(cvBridge_->image, cv::Point(rightKneeX, rightKneeY), JOINT_RADIUS, skeletonColor, cv::FILLED);
 
     int rightAnkleX = clip((int)(skeleton[hri_msgs::Skeleton2D::RIGHT_ANKLE].x*width), 0, width);
     int rightAnkleY = clip((int)(skeleton[hri_msgs::Skeleton2D::RIGHT_ANKLE].y*height), 0, height);
 
+    cv::circle(cvBridge_->image, cv::Point(rightAnkleX, rightAnkleY), JOINT_RADIUS, skeletonColor, cv::FILLED);
+
     int leftKneeX = clip((int)(skeleton[hri_msgs::Skeleton2D::LEFT_KNEE].x*width), 0, width);
     int leftKneeY = clip((int)(skeleton[hri_msgs::Skeleton2D::LEFT_KNEE].y*height), 0, height);
 
+    cv::circle(cvBridge_->image, cv::Point(leftKneeX, leftKneeY), JOINT_RADIUS, skeletonColor, cv::FILLED);
+
     int leftAnkleX = clip((int)(skeleton[hri_msgs::Skeleton2D::LEFT_ANKLE].x*width), 0, width);
     int leftAnkleY = clip((int)(skeleton[hri_msgs::Skeleton2D::LEFT_ANKLE].y*height), 0, height);
+
+    cv::circle(cvBridge_->image, cv::Point(leftAnkleX, leftAnkleY), JOINT_RADIUS, skeletonColor, cv::FILLED);
 
     // Upper body
     cv::line(cvBridge_->image, cv::Point(neckX, neckY), cv::Point(rightShoulderX, rightShoulderY), skeletonColor, 5, cv::FILLED);
