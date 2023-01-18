@@ -2,8 +2,8 @@
 Changelog for package hri_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.0 (2023-01-18)
+------------------
 * Merge branch 'skeletons' into 'main'
   skeleton extension for Humans plugin
   See merge request ros4hri/hri_rviz!5
