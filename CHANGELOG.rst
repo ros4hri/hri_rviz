@@ -2,6 +2,19 @@
 Changelog for package hri_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge branch 'skeletons' into 'main'
+  skeleton extension for Humans plugin
+  See merge request ros4hri/hri_rviz!5
+* joint visualization as circles
+* Optimized iteration over bodies for skeleton representation
+* Introducing skeleton visualization
+  It is now possible to visualize 2D skeletons using the humans
+  rviz plugin.
+* add LICENSE
+* Contributors: Séverin Lemaignan, lorenzoferrini
+
 0.3.1 (2022-07-12)
 ------------------
 * set license to BSD
