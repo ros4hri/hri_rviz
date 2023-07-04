@@ -411,7 +411,11 @@ void HumansDisplay::processMessage(const sensor_msgs::Image::ConstPtr& msg) {
               face.second.lock()) {  // ensure the face is still here
         if(show_faces_){
           auto roi = face_ptr->roi();
-          cv::rectangle(cvBridge_->image, roi, get_color_from_id(face.first), 5);
+          cv::Point roi_tl(static_cast<int>(roi.xmin * msg->width),
+                           static_cast<int>(roi.ymin * msg->height));
+          cv::Point roi_br(static_cast<int>(roi.xmax * msg->width),
+                           static_cast<int>(roi.ymax * msg->height));
+          cv::rectangle(cvBridge_->image, roi_tl, roi_br, get_color_from_id(face.first), 5);
         }
         if(show_facial_landmarks_){
           auto landmarks = *(face_ptr->facialLandmarks()); // boost::optional
@@ -431,7 +435,11 @@ void HumansDisplay::processMessage(const sensor_msgs::Image::ConstPtr& msg) {
               body.second.lock()) {  // ensure the body is still here
         if (show_bodies_){
           auto roi = body_ptr->roi();
-          cv::rectangle(cvBridge_->image, roi, get_color_from_id(body.first), 5);
+          cv::Point roi_tl(static_cast<int>(roi.xmin * msg->width),
+                           static_cast<int>(roi.ymin * msg->height));
+          cv::Point roi_br(static_cast<int>(roi.xmax * msg->width),
+                           static_cast<int>(roi.ymax * msg->height));
+          cv::rectangle(cvBridge_->image, roi_tl, roi_br, get_color_from_id(body.first), 5);
         }
         if (show_skeletons_){
           auto skeleton = body_ptr->skeleton();
