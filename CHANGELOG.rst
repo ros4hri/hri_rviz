@@ -2,6 +2,11 @@
 Changelog for package hri_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* changed RoI type to normalized one
+* Contributors: Luka Juricic
+
 0.4.0 (2023-01-18)
 ------------------
 * Merge branch 'skeletons' into 'main'
