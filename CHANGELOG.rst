@@ -2,8 +2,8 @@
 Changelog for package hri_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.1 (2023-07-05)
+------------------
 * changed RoI type to normalized one
 * Contributors: Luka Juricic
 
