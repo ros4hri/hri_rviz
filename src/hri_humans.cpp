@@ -421,7 +421,10 @@ void HumansDisplay::processMessage(const sensor_msgs::Image::ConstPtr& msg) {
           auto landmarks = *(face_ptr->facialLandmarks()); // boost::optional
           for(auto landmark : landmarks){
             if(landmark.x > 0 || landmark.y > 0)
-              cv::circle(cvBridge_->image, cv::Point(landmark.x, landmark.y), 5, get_color_from_id(face.first), cv::FILLED);
+              cv::circle(cvBridge_->image,
+                         cv::Point(static_cast<int>(landmark.x*msg->width), static_cast<int>(landmark.y*msg->height)),
+                         5,
+                         get_color_from_id(face.first), cv::FILLED);
           }
         }
       }
