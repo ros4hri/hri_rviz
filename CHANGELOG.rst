@@ -2,8 +2,8 @@
 Changelog for package hri_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.2 (2023-10-18)
+------------------
 * moving from non-normalized to normalized facial landmarks
 * Contributors: lorenzoferrini
 
