@@ -1,91 +1,119 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.8)
 project(hri_rviz)
 
-add_compile_options(-std=c++11)
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
 
-find_package(catkin REQUIRED COMPONENTS
-  roscpp
-  rviz
-  hri_msgs
+# find dependencies
+find_package(ament_cmake REQUIRED)
+
+find_package(Qt5 REQUIRED COMPONENTS Widgets Core)
+
+find_package(rclcpp REQUIRED)
+find_package(ament_cmake_auto REQUIRED)
+find_package(rcpputils REQUIRED)
+
+find_package(pluginlib REQUIRED)
+
+find_package(rviz_common REQUIRED)
+find_package(rviz_default_plugins REQUIRED)
+
+find_package(hri REQUIRED)
+find_package(hri_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+
+find_package(cv_bridge REQUIRED)
+find_package(OpenCV REQUIRED)
+
+## This setting causes Qt's "MOC" generation to happen automatically, which is required for
+## Qt's signal/slot connections to work.
+set(CMAKE_AUTOMOC ON)
+
+set(HEADER_FILES
+  include/hri_rviz/hri_humans.hpp
+)
+
+foreach(header "${HEADER_FILES}")
+  qt5_wrap_cpp(MOCED_HEADER_FILES "${header}")
+endforeach()
+
+set(SRC_FILES
+  src/hri_humans.cpp
+)
+
+add_library(${PROJECT_NAME} SHARED
+  ${MOCED_HEADER_FILES}
+  ${SRC_FILES}
+)
+
+target_include_directories(${PROJECT_NAME} PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
+  ${Qt5Widgets_INCLUDE_DIRS}
+)
+
+target_link_libraries(${PROJECT_NAME} PUBLIC
+  rviz_ogre_vendor::OgreMain
+  rviz_ogre_vendor::OgreOverlay
+  rviz_common::rviz_common
+)
+
+ament_target_dependencies(${PROJECT_NAME}
+  PUBLIC
+  pluginlib
+  rcpputils
+  rclcpp
   hri
+  hri_msgs
   sensor_msgs
+  rviz_common
+  rviz_default_plugins
   cv_bridge
 )
 
-find_package(OpenCV REQUIRED)
-catkin_package()
+# Export the plugin to be imported by rviz2
+pluginlib_export_plugin_description_file(rviz_common plugins_description.xml)
 
-include_directories(
-    SYSTEM
-    ${catkin_INCLUDE_DIRS})
+# Export old-style CMake variables
+ament_export_include_directories("include/${PROJECT_NAME}")
 
-link_directories(${catkin_LIBRARY_DIRS})
+# Export modern CMake targets
+ament_export_targets(${PROJECT_NAME} HAS_LIBRARY_TARGET)
 
-## This setting causes Qt's "MOC" generation to happen automatically.
-set(CMAKE_AUTOMOC ON)
+ament_export_dependencies(
+  rcpputils
+  rclcpp
+  hri
+  hri_msgs
+  rviz_common
+  rviz_default_plugins
+  cv_bridge
+)
 
+install(
+  TARGETS ${PROJECT_NAME}
+  EXPORT ${PROJECT_NAME}
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
 
-## This plugin includes Qt widgets, so we must include Qt.
-## We'll use the version that rviz used so they are compatible.
-if(rviz_QT_VERSION VERSION_LESS "5")
-  message(STATUS "Using Qt4 based on the rviz_QT_VERSION: ${rviz_QT_VERSION}")
-  find_package(Qt4 ${rviz_QT_VERSION} EXACT REQUIRED QtCore QtGui)
-  ## pull in all required include dirs, define QT_LIBRARIES, etc.
-  include(${QT_USE_FILE})
-else()
-  message(STATUS "Using Qt5 based on the rviz_QT_VERSION: ${rviz_QT_VERSION}")
-  find_package(Qt5 ${rviz_QT_VERSION} REQUIRED Core Widgets)
-  ## make target_link_libraries(${QT_LIBRARIES}) pull in all required dependencies
-  set(QT_LIBRARIES Qt5::Widgets)
+install(
+  DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/icons"
+  DESTINATION "share/${PROJECT_NAME}"
+)
+
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  # the following line skips the linter which checks for copyrights
+  # comment the line when a copyright and license is added to all source files
+  set(ament_cmake_copyright_FOUND TRUE)
+  # the following line skips cpplint (only works in a git repo)
+  # comment the line when this package is in a git repo and when
+  # a copyright and license is added to all source files
+  set(ament_cmake_cpplint_FOUND TRUE)
+  ament_lint_auto_find_test_dependencies()
 endif()
 
-
-
-## I prefer the Qt signals and slots to avoid defining "emit", "slots",
-## etc because they can conflict with boost signals, so define QT_NO_KEYWORDS here.
-add_definitions(-DQT_NO_KEYWORDS)
-
-## Here we specify the list of source files.
-## The generated MOC files are included automatically as headers.
-set(SRC_FILES
-  src/hri_humans.cpp
-  src/hri_skeletons.cpp
-  src/hri_tf.cpp
-)
-
-## An rviz plugin is just a shared library, so here we declare the
-## library to be called ``${PROJECT_NAME}`` (which is
-## "rviz_plugin_tutorials", or whatever your version of this project
-## is called) and specify the list of source files we collected above
-## in ``${SRC_FILES}``.
-add_library(${PROJECT_NAME} ${SRC_FILES})
-
-## Link the myviz executable with whatever Qt libraries have been defined by
-## the ``find_package(Qt4 ...)`` line above, or by the
-## ``set(QT_LIBRARIES Qt5::Widgets)``, and with whatever libraries
-## catkin has included.
-##
-## Although this puts "rviz_plugin_tutorials" (or whatever you have
-## called the project) as the name of the library, cmake knows it is a
-## library and names the actual file something like
-## "librviz_plugin_tutorials.so", or whatever is appropriate for your
-## particular OS.
-target_link_libraries(${PROJECT_NAME} ${QT_LIBRARIES} ${catkin_LIBRARIES})
-
-
-install(TARGETS
-  ${PROJECT_NAME}
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
-
-install(FILES
-  plugin_description.xml
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
-
-#install(DIRECTORY media/
-#  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/media)
-
-install(DIRECTORY icons/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/icons)
+ament_auto_package()

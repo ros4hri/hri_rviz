@@ -27,7 +27,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include "hri_humans.hpp"
+#include "hri_rviz/hri_humans.hpp"
 
 #include <OGRE/OgreCamera.h>
 #include <OGRE/OgreManualObject.h>
@@ -41,31 +41,30 @@
 #include <OGRE/OgreTechnique.h>
 #include <OGRE/OgreTextureManager.h>
 #include <OGRE/OgreViewport.h>
-#include <cv_bridge/cv_bridge.h>
-#include <hri_msgs/IdsList.h>
-#include <hri_msgs/NormalizedPointOfInterest2D.h>
-#include <hri_msgs/Skeleton2D.h>
-#include <image_transport/image_transport.h>
-#include <rviz/display_context.h>
-#include <rviz/frame_manager.h>
-#include <rviz/ogre_helpers/compatibility.h>
-#include <rviz/render_panel.h>
-#include <rviz/validate_floats.h>
-#include <sensor_msgs/image_encodings.h>
-#include <stdlib.h>  // srand, rand
 
-#include <boost/bind.hpp>
+#include <rviz_common/display_context.hpp>
+#include <rviz_common/render_panel.hpp>
+#include <rviz_common/validate_floats.hpp>
+#include <rviz_common/uniform_string_stream.hpp>
+#include <rviz_rendering/material_manager.hpp>
+#include <rviz_rendering/render_window.hpp>
+
+#include <rviz_default_plugins/displays/image/ros_image_texture.hpp>
+#include <rviz_default_plugins/displays/image/image_display.hpp>
+#include <rviz_default_plugins/displays/image/ros_image_texture_iface.hpp>
+
+#include <sensor_msgs/image_encodings.hpp>
+#include <hri_msgs/msg/skeleton2_d.hpp>
+
 #include <opencv2/opencv.hpp>
+
+#include <stdlib.h>
 #include <sstream>
-#include <string>
-#include <unordered_map>
-#include <vector>
-
-#define SKELETON_POINTS 18
-
-#define JOINT_RADIUS 8
 
 using namespace std;
+
+constexpr int SKELETON_POINTS = 18;
+constexpr int JOINT_RADIUS = 8;
 
 cv::Scalar get_color_from_id(std::string id) {
   hash<string> hasher;
@@ -81,23 +80,33 @@ int clip(int n, int lower, int upper){
   return std::max(lower, std::min(n, upper));
 }
 
-namespace rviz {
-HumansDisplay::HumansDisplay() : ImageDisplayBase(), texture_() {
+namespace rviz_hri_plugins {
+
+HumansDisplay::HumansDisplay()
+: HumansDisplay(std::make_unique<rviz_default_plugins::displays::ROSImageTexture>()) {}
+
+HumansDisplay::HumansDisplay(std::unique_ptr<rviz_default_plugins::displays::ROSImageTextureIface> texture):
+ texture_(std::move(texture)) {
+  hri_executor_ = rclcpp::executors::MultiThreadedExecutor::make_shared();
+  hri_node_ = rclcpp::Node::make_shared("hri_node");
+  hri_executor_->add_node(hri_node_);
+  hri_listener_ = hri::HRIListener::create(hri_node_);
+
   normalize_property_ =
       new BoolProperty("Normalize Range", true,
                        "If set to true, will try to estimate the range of "
                        "possible values from the received images.",
                        this, SLOT(updateNormalizeOptions()));
 
-  min_property_ = new FloatProperty("Min Value", 0.0,
+  min_property_ = new rviz_common::properties::FloatProperty("Min Value", 0.0,
                                     "Value which will be displayed as black.",
                                     this, SLOT(updateNormalizeOptions()));
 
-  max_property_ = new FloatProperty("Max Value", 1.0,
+  max_property_ = new rviz_common::properties::FloatProperty("Max Value", 1.0,
                                     "Value which will be displayed as white.",
                                     this, SLOT(updateNormalizeOptions()));
 
-  median_buffer_size_property_ = new IntProperty(
+  median_buffer_size_property_ = new rviz_common::properties::IntProperty(
       "Median window", 5,
       "Window size for median filter used for computin min/max.", this,
       SLOT(updateNormalizeOptions()));
@@ -126,83 +135,28 @@ HumansDisplay::HumansDisplay() : ImageDisplayBase(), texture_() {
 }
 
 void HumansDisplay::onInitialize() {
-  ImageDisplayBase::onInitialize();
-  {
-    static uint32_t count = 0;
-    std::stringstream ss;
-    ss << "HumansDisplay" << count++;
-    img_scene_manager_ = Ogre::Root::getSingleton().createSceneManager(
-        Ogre::ST_GENERIC, ss.str());
-  }
-
-  img_scene_node_ =
-      img_scene_manager_->getRootSceneNode()->createChildSceneNode();
-
-  {
-    static int count = 0;
-    std::stringstream ss;
-    ss << "HumansDisplayObject" << count++;
-
-    screen_rect_ = new Ogre::Rectangle2D(true);
-    screen_rect_->setRenderQueueGroup(Ogre::RENDER_QUEUE_OVERLAY - 1);
-    screen_rect_->setCorners(-1.0f, 1.0f, 1.0f, -1.0f);
-
-    ss << "Material";
-    material_ = Ogre::MaterialManager::getSingleton().create(
-        ss.str(), Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
-    material_->setSceneBlending(Ogre::SBT_REPLACE);
-    material_->setDepthWriteEnabled(false);
-    material_->setReceiveShadows(false);
-    material_->setDepthCheckEnabled(false);
-
-    material_->getTechnique(0)->setLightingEnabled(false);
-    Ogre::TextureUnitState* tu =
-        material_->getTechnique(0)->getPass(0)->createTextureUnitState();
-    tu->setTextureName(texture_.getTexture()->getName());
-    tu->setTextureFiltering(Ogre::TFO_NONE);
-
-    material_->setCullingMode(Ogre::CULL_NONE);
-    Ogre::AxisAlignedBox aabInf;
-    aabInf.setInfinite();
-    screen_rect_->setBoundingBox(aabInf);
-    setMaterial(*screen_rect_, material_);
-    img_scene_node_->attachObject(screen_rect_);
-  }
-
-  render_panel_ = new RenderPanel();
-  render_panel_->getRenderWindow()->setAutoUpdated(false);
-  render_panel_->getRenderWindow()->setActive(false);
-
-  render_panel_->resize(640, 480);
-  render_panel_->initialize(img_scene_manager_, context_);
-
-  setAssociatedWidget(render_panel_);
-
-  render_panel_->setAutoRender(false);
-  render_panel_->setOverlaysEnabled(false);
-  render_panel_->getCamera()->setNearClipDistance(0.01f);
+  ITDClass::onInitialize();
 
   updateNormalizeOptions();
+  setupScreenRectangle();
+
+  setupRenderPanel();
+
+  render_panel_->getRenderWindow()->setupSceneAfterInit(
+    [this](Ogre::SceneNode * scene_node) {
+      scene_node->attachObject(screen_rect_.get());
+    });
 }
 
-HumansDisplay::~HumansDisplay() {
-  if (initialized()) {
-    delete render_panel_;
-    delete screen_rect_;
-    removeAndDestroyChildNode(img_scene_node_->getParentSceneNode(),
-                              img_scene_node_);
-  }
-}
+HumansDisplay::~HumansDisplay() = default;
 
 void HumansDisplay::onEnable() {
-  ImageDisplayBase::subscribe();
-  render_panel_->getRenderWindow()->setActive(true);
+  ITDClass::subscribe();
 }
 
 void HumansDisplay::onDisable() {
-  render_panel_->getRenderWindow()->setActive(false);
-  ImageDisplayBase::unsubscribe();
-  reset();
+  ITDClass::unsubscribe();
+  clear();
 }
 
 void HumansDisplay::updateShowFaces() {
@@ -230,9 +184,9 @@ void HumansDisplay::updateNormalizeOptions() {
     max_property_->setHidden(normalize);
     median_buffer_size_property_->setHidden(!normalize);
 
-    texture_.setNormalizeFloatImage(normalize, min_property_->getFloat(),
+    texture_->setNormalizeFloatImage(normalize, min_property_->getFloat(),
                                     max_property_->getFloat());
-    texture_.setMedianFrames(median_buffer_size_property_->getInt());
+    texture_->setMedianFrames(median_buffer_size_property_->getInt());
   } else {
     normalize_property_->setHidden(true);
     min_property_->setHidden(true);
@@ -241,18 +195,23 @@ void HumansDisplay::updateNormalizeOptions() {
   }
 }
 
+void HumansDisplay::clear()
+{
+  texture_->clear();
+}
+
 void HumansDisplay::update(float wall_dt, float ros_dt) {
-  Q_UNUSED(wall_dt)
-  Q_UNUSED(ros_dt)
+  (void) wall_dt;
+  (void) ros_dt;
   try {
-    texture_.update();
+    texture_->update();
 
     // make sure the aspect ratio of the image is preserved
     float win_width = render_panel_->width();
     float win_height = render_panel_->height();
 
-    float img_width = texture_.getWidth();
-    float img_height = texture_.getHeight();
+    float img_width = texture_->getWidth();
+    float img_height = texture_->getHeight();
 
     if (img_width != 0 && img_height != 0 && win_width != 0 &&
         win_height != 0) {
@@ -267,21 +226,17 @@ void HumansDisplay::update(float wall_dt, float ros_dt) {
                                  1.0f * img_aspect / win_aspect, -1.0f, false);
       }
     }
-
-    render_panel_->getRenderWindow()->update();
-  } catch (UnsupportedImageEncoding& e) {
-    setStatus(StatusProperty::Error, "Image", e.what());
+  } catch (rviz_default_plugins::displays::UnsupportedImageEncoding& e) {
+    setStatus(rviz_common::properties::StatusProperty::Error, "Image", e.what());
   }
 }
 
 void HumansDisplay::reset() {
-  ImageDisplayBase::reset();
-  texture_.clear();
-  render_panel_->getCamera()->setPosition(
-      Ogre::Vector3(999999, 999999, 999999));
+  ITDClass::reset();
+  clear();
 }
 
-void HumansDisplay::drawSkeleton(std::string id, int width, int height, std::vector<hri_msgs::NormalizedPointOfInterest2D>& skeleton){
+void HumansDisplay::drawSkeleton(std::string id, int width, int height, std::map<hri::SkeletalKeypoint, hri::PointOfInterest>& skeleton){
   /* Body chains:
      1 - 2 - 8 - 11 - 5 ==> Upper body chain
      2 - 3 - 4 ==> Right arm chain
@@ -294,68 +249,81 @@ void HumansDisplay::drawSkeleton(std::string id, int width, int height, std::vec
 
     cv::Scalar skeletonColor = get_color_from_id(id);
 
-    int neckX = clip((int)(skeleton[hri_msgs::Skeleton2D::NECK].x*width), 0, width);
-    int neckY = clip((int)(skeleton[hri_msgs::Skeleton2D::NECK].y*height), 0, height);
+    hri::PointOfInterest neckPoI = skeleton[hri::SkeletalKeypoint::kNeck];
+    int neckX = clip((int)(neckPoI.x*width), 0, width);
+    int neckY = clip((int)(neckPoI.y*height), 0, height);
 
     cv::circle(cvBridge_->image, cv::Point(neckX, neckY), JOINT_RADIUS, skeletonColor, cv::FILLED);
 
-    int rightShoulderX = clip((int)(skeleton[hri_msgs::Skeleton2D::RIGHT_SHOULDER].x*width), 0, width);
-    int rightShoulderY = clip((int)(skeleton[hri_msgs::Skeleton2D::RIGHT_SHOULDER].y*height), 0, height);
+    hri::PointOfInterest rightShoulderPoI = skeleton[hri::SkeletalKeypoint::kRightShoulder];
+    int rightShoulderX = clip((int)(rightShoulderPoI.x*width), 0, width);
+    int rightShoulderY = clip((int)(rightShoulderPoI.y*height), 0, height);
 
     cv::circle(cvBridge_->image, cv::Point(rightShoulderX, rightShoulderY), JOINT_RADIUS, skeletonColor, cv::FILLED);
 
-    int rightHipX = clip((int)(skeleton[hri_msgs::Skeleton2D::RIGHT_HIP].x*width), 0, width);
-    int rightHipY = clip((int)(skeleton[hri_msgs::Skeleton2D::RIGHT_HIP].y*height), 0, height);
+    hri::PointOfInterest rightHipPoI = skeleton[hri::SkeletalKeypoint::kRightHip];
+    int rightHipX = clip((int)(rightHipPoI.x*width), 0, width);
+    int rightHipY = clip((int)(rightHipPoI.y*height), 0, height);
 
     cv::circle(cvBridge_->image, cv::Point(rightHipX, rightHipY), JOINT_RADIUS, skeletonColor, cv::FILLED);    
 
-    int leftHipX = clip((int)(skeleton[hri_msgs::Skeleton2D::LEFT_HIP].x*width), 0, width);
-    int leftHipY = clip((int)(skeleton[hri_msgs::Skeleton2D::LEFT_HIP].y*height), 0, height);
+    hri::PointOfInterest leftHipPoI = skeleton[hri::SkeletalKeypoint::kLeftHip];
+    int leftHipX = clip((int)(leftHipPoI.x*width), 0, width);
+    int leftHipY = clip((int)(leftHipPoI.y*height), 0, height);
 
     cv::circle(cvBridge_->image, cv::Point(leftHipX, leftHipY), JOINT_RADIUS, skeletonColor, cv::FILLED);
 
-    int leftShoulderX = clip((int)(skeleton[hri_msgs::Skeleton2D::LEFT_SHOULDER].x*width), 0, width);
-    int leftShoulderY = clip((int)(skeleton[hri_msgs::Skeleton2D::LEFT_SHOULDER].y*height), 0, height);
+    hri::PointOfInterest leftShoulderPoI = skeleton[hri::SkeletalKeypoint::kLeftShoulder];
+    int leftShoulderX = clip((int)(leftShoulderPoI.x*width), 0, width);
+    int leftShoulderY = clip((int)(leftShoulderPoI.y*height), 0, height);
 
     cv::circle(cvBridge_->image, cv::Point(leftShoulderX, leftShoulderY), JOINT_RADIUS, skeletonColor, cv::FILLED);
 
-    int rightElbowX = clip((int)(skeleton[hri_msgs::Skeleton2D::RIGHT_ELBOW].x*width), 0, width);
-    int rightElbowY = clip((int)(skeleton[hri_msgs::Skeleton2D::RIGHT_ELBOW].y*height), 0, height);
+    hri::PointOfInterest rightElbowPoI = skeleton[hri::SkeletalKeypoint::kRightElbow];
+    int rightElbowX = clip((int)(rightElbowPoI.x*width), 0, width);
+    int rightElbowY = clip((int)(rightElbowPoI.y*height), 0, height);
 
     cv::circle(cvBridge_->image, cv::Point(rightElbowX, rightElbowY), JOINT_RADIUS, skeletonColor, cv::FILLED);
 
-    int rightWristX = clip((int)(skeleton[hri_msgs::Skeleton2D::RIGHT_WRIST].x*width), 0, width);
-    int rightWristY = clip((int)(skeleton[hri_msgs::Skeleton2D::RIGHT_WRIST].y*height), 0, height);
+    hri::PointOfInterest rightWristPoI = skeleton[hri::SkeletalKeypoint::kRightWrist];
+    int rightWristX = clip((int)(rightWristPoI.x*width), 0, width);
+    int rightWristY = clip((int)(rightWristPoI.y*height), 0, height);
 
     cv::circle(cvBridge_->image, cv::Point(rightWristX, rightWristY), JOINT_RADIUS, skeletonColor, cv::FILLED);
 
-    int leftElbowX = clip((int)(skeleton[hri_msgs::Skeleton2D::LEFT_ELBOW].x*width), 0, width);
-    int leftElbowY = clip((int)(skeleton[hri_msgs::Skeleton2D::LEFT_ELBOW].y*height), 0, height);
+    hri::PointOfInterest leftElbowPoI = skeleton[hri::SkeletalKeypoint::kLeftElbow];
+    int leftElbowX = clip((int)(leftElbowPoI.x*width), 0, width);
+    int leftElbowY = clip((int)(leftElbowPoI.y*height), 0, height);
 
     cv::circle(cvBridge_->image, cv::Point(leftElbowX, leftElbowY), JOINT_RADIUS, skeletonColor, cv::FILLED);
 
-    int leftWristX = clip((int)(skeleton[hri_msgs::Skeleton2D::LEFT_WRIST].x*width), 0, width);
-    int leftWristY = clip((int)(skeleton[hri_msgs::Skeleton2D::LEFT_WRIST].y*height), 0, height);
+    hri::PointOfInterest leftWristPoI = skeleton[hri::SkeletalKeypoint::kLeftWrist];
+    int leftWristX = clip((int)(leftWristPoI.x*width), 0, width);
+    int leftWristY = clip((int)(leftWristPoI.y*height), 0, height);
 
     cv::circle(cvBridge_->image, cv::Point(leftWristX, leftWristY), JOINT_RADIUS, skeletonColor, cv::FILLED);
 
-    int rightKneeX = clip((int)(skeleton[hri_msgs::Skeleton2D::RIGHT_KNEE].x*width), 0, width);
-    int rightKneeY = clip((int)(skeleton[hri_msgs::Skeleton2D::RIGHT_KNEE].y*height), 0, height);
+    hri::PointOfInterest rightKneePoI = skeleton[hri::SkeletalKeypoint::kRightKnee];
+    int rightKneeX = clip((int)(rightKneePoI.x*width), 0, width);
+    int rightKneeY = clip((int)(rightKneePoI.y*height), 0, height);
 
     cv::circle(cvBridge_->image, cv::Point(rightKneeX, rightKneeY), JOINT_RADIUS, skeletonColor, cv::FILLED);
 
-    int rightAnkleX = clip((int)(skeleton[hri_msgs::Skeleton2D::RIGHT_ANKLE].x*width), 0, width);
-    int rightAnkleY = clip((int)(skeleton[hri_msgs::Skeleton2D::RIGHT_ANKLE].y*height), 0, height);
+    hri::PointOfInterest rightAnklePoI = skeleton[hri::SkeletalKeypoint::kRightAnkle];
+    int rightAnkleX = clip((int)(rightAnklePoI.x*width), 0, width);
+    int rightAnkleY = clip((int)(rightAnklePoI.y*height), 0, height);
 
     cv::circle(cvBridge_->image, cv::Point(rightAnkleX, rightAnkleY), JOINT_RADIUS, skeletonColor, cv::FILLED);
 
-    int leftKneeX = clip((int)(skeleton[hri_msgs::Skeleton2D::LEFT_KNEE].x*width), 0, width);
-    int leftKneeY = clip((int)(skeleton[hri_msgs::Skeleton2D::LEFT_KNEE].y*height), 0, height);
+    hri::PointOfInterest leftKneePoI = skeleton[hri::SkeletalKeypoint::kLeftKnee];
+    int leftKneeX = clip((int)(leftKneePoI.x*width), 0, width);
+    int leftKneeY = clip((int)(leftKneePoI.y*height), 0, height);
 
     cv::circle(cvBridge_->image, cv::Point(leftKneeX, leftKneeY), JOINT_RADIUS, skeletonColor, cv::FILLED);
 
-    int leftAnkleX = clip((int)(skeleton[hri_msgs::Skeleton2D::LEFT_ANKLE].x*width), 0, width);
-    int leftAnkleY = clip((int)(skeleton[hri_msgs::Skeleton2D::LEFT_ANKLE].y*height), 0, height);
+    hri::PointOfInterest leftAnklePoI = skeleton[hri::SkeletalKeypoint::kLeftAnkle];
+    int leftAnkleX = clip((int)(leftAnklePoI.x*width), 0, width);
+    int leftAnkleY = clip((int)(leftAnklePoI.y*height), 0, height);
 
     cv::circle(cvBridge_->image, cv::Point(leftAnkleX, leftAnkleY), JOINT_RADIUS, skeletonColor, cv::FILLED);
 
@@ -385,7 +353,9 @@ void HumansDisplay::drawSkeleton(std::string id, int width, int height, std::vec
   }
 }
 
-void HumansDisplay::processMessage(const sensor_msgs::Image::ConstPtr& msg) {
+void HumansDisplay::processMessage(const sensor_msgs::msg::Image::ConstSharedPtr msg) {
+  hri_executor_->spin_some();
+
   bool got_float_image =
       msg->encoding == sensor_msgs::image_encodings::TYPE_32FC1 ||
       msg->encoding == sensor_msgs::image_encodings::TYPE_16UC1 ||
@@ -398,31 +368,31 @@ void HumansDisplay::processMessage(const sensor_msgs::Image::ConstPtr& msg) {
   }
 
   if (!show_faces_ && !show_bodies_ && !show_skeletons_) {
-    texture_.addMessage(msg);
+    texture_->addMessage(msg);
     return;
   }
 
   cvBridge_ = cv_bridge::toCvCopy(msg);
 
   if (show_faces_ || show_facial_landmarks_) {
-    auto faces = hri_listener.getFaces();
+    auto faces = hri_listener_->getFaces();
     for (auto const& face : faces) {
-      if (auto face_ptr =
-              face.second.lock()) {  // ensure the face is still here
+      if (face.second->valid()) {  // ensure the face fields are valid
+        auto face_ptr = face.second;
         if(show_faces_){
           auto roi = face_ptr->roi();
-          cv::Point roi_tl(static_cast<int>(roi.xmin * msg->width),
-                           static_cast<int>(roi.ymin * msg->height));
-          cv::Point roi_br(static_cast<int>(roi.xmax * msg->width),
-                           static_cast<int>(roi.ymax * msg->height));
+          cv::Point roi_tl(static_cast<int>(roi->x * msg->width),
+                           static_cast<int>(roi->y * msg->height));
+          cv::Point roi_br(static_cast<int>((roi->x+roi->width) * msg->width),
+                           static_cast<int>((roi->y+roi->height) * msg->height));
           cv::rectangle(cvBridge_->image, roi_tl, roi_br, get_color_from_id(face.first), 5);
         }
         if(show_facial_landmarks_){
           auto landmarks = *(face_ptr->facialLandmarks()); // boost::optional
           for(auto landmark : landmarks){
-            if(landmark.x > 0 || landmark.y > 0)
+            if(landmark.second.x > 0 || landmark.second.y > 0)
               cv::circle(cvBridge_->image,
-                         cv::Point(static_cast<int>(landmark.x*msg->width), static_cast<int>(landmark.y*msg->height)),
+                         cv::Point(static_cast<int>(landmark.second.x*msg->width), static_cast<int>(landmark.second.y*msg->height)),
                          5,
                          get_color_from_id(face.first), cv::FILLED);
           }
@@ -432,30 +402,72 @@ void HumansDisplay::processMessage(const sensor_msgs::Image::ConstPtr& msg) {
   }
 
   if (show_bodies_ || show_skeletons_) {
-    auto bodies = hri_listener.getBodies();
+    auto bodies = hri_listener_->getBodies();
     for (auto const& body : bodies) {
-      if (auto body_ptr =
-              body.second.lock()) {  // ensure the body is still here
+      if (body.second->valid()) {  // ensure the body fields are valid
+        auto body_ptr = body.second;
         if (show_bodies_){
           auto roi = body_ptr->roi();
-          cv::Point roi_tl(static_cast<int>(roi.xmin * msg->width),
-                           static_cast<int>(roi.ymin * msg->height));
-          cv::Point roi_br(static_cast<int>(roi.xmax * msg->width),
-                           static_cast<int>(roi.ymax * msg->height));
+          cv::Point roi_tl(static_cast<int>(roi->x * msg->width),
+                           static_cast<int>(roi->y * msg->height));
+          cv::Point roi_br(static_cast<int>((roi->x+roi->width) * msg->width),
+                           static_cast<int>((roi->y+roi->height) * msg->height));
           cv::rectangle(cvBridge_->image, roi_tl, roi_br, get_color_from_id(body.first), 5);
         }
         if (show_skeletons_){
           auto skeleton = body_ptr->skeleton();
-          drawSkeleton(body.first, msg->width, msg->height, skeleton);
+          if (skeleton)
+            drawSkeleton(body.first, msg->width, msg->height, *skeleton);
         }
       }
     }
   }
 
-  texture_.addMessage(cvBridge_->toImageMsg());
+  texture_->addMessage(cvBridge_->toImageMsg());
+}
+
+void HumansDisplay::setupScreenRectangle()
+{
+  static int count = 0;
+  rviz_common::UniformStringStream ss;
+  ss << "HumansDisplayObject" << count++;
+
+  screen_rect_ = std::make_unique<Ogre::Rectangle2D>(true);
+  screen_rect_->setRenderQueueGroup(Ogre::RENDER_QUEUE_OVERLAY - 1);
+  screen_rect_->setCorners(-1.0f, 1.0f, 1.0f, -1.0f);
+
+  ss << "Material";
+  material_ = rviz_rendering::MaterialManager::createMaterialWithNoLighting(ss.str());
+  material_->setSceneBlending(Ogre::SBT_REPLACE);
+  material_->setDepthWriteEnabled(false);
+  material_->setDepthCheckEnabled(false);
+
+  Ogre::TextureUnitState * tu =
+    material_->getTechnique(0)->getPass(0)->createTextureUnitState();
+  tu->setTextureName(texture_->getName());
+  tu->setTextureFiltering(Ogre::TFO_NONE);
+  tu->setTextureAddressingMode(Ogre::TextureUnitState::TAM_CLAMP);
+
+  material_->setCullingMode(Ogre::CULL_NONE);
+  Ogre::AxisAlignedBox aabInf;
+  aabInf.setInfinite();
+  screen_rect_->setBoundingBox(aabInf);
+  screen_rect_->setMaterial(material_);
+}
+
+void HumansDisplay::setupRenderPanel()
+{
+  render_panel_ = std::make_unique<rviz_common::RenderPanel>();
+  render_panel_->resize(640, 480);
+  render_panel_->initialize(context_);
+  setAssociatedWidget(render_panel_.get());
+
+  static int count = 0;
+  render_panel_->getRenderWindow()->setObjectName(
+    "HumansDisplayRenderWindow" + QString::number(count++));
 }
 
 }  // namespace rviz
 
 #include <pluginlib/class_list_macros.hpp>
-PLUGINLIB_EXPORT_CLASS(rviz::HumansDisplay, rviz::Display)
+PLUGINLIB_EXPORT_CLASS(rviz_hri_plugins::HumansDisplay, rviz_common::Display)

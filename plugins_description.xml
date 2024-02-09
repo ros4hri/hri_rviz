@@ -1,0 +1,13 @@
+<library path="hri_rviz">
+  <class name="hri_rviz/Humans"
+         type="rviz_hri_plugins::HumansDisplay"
+         base_class_type="rviz_common::Display">
+    <description>
+        An image diplayer to visualize the people detected
+    </description>
+    <message_type>sensor_msgs/msg/Image</message_type>
+    <message_type>sensor_msgs/msg/CompressedImage</message_type>
+    <message_type>theora_image_transport/msg/Packet</message_type>
+  </class>  
+</library>
+

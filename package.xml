@@ -1,32 +1,29 @@
 <?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>hri_rviz</name>
-  <version>0.4.2</version>
-  <description>
-  This package contains several rviz plugins to visualize HRI-related topics (like face/body region of interests, 3D skeletons...)
-  </description>
-  <maintainer email="severin.lemaignan@pal-robotics.com">Séverin Lemaignan</maintainer>
-  <author>Lorenzo Ferrini</author>
-  <author>Séverin Lemaignan</author>
+  <version>1.9.9</version>
+  <description>Set of rviz plugins for ROS4HRI data visualization</description>
+  <author email="lorenzo.ferrini@pal-robotics.com">Lorenzo Ferrini</author>
+  <license>Apache 2.0 License</license>
+  <maintainer email="lorenzo.ferrini@pal-robotics.com">Lorenzo Ferrini</maintainer>
 
+  <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <license>BSD</license>
-
-  <buildtool_depend>catkin</buildtool_depend>
-  <depend>roscpp</depend>
-  <depend>hri_msgs</depend>
+  <depend>rcpputils</depend>
+  <depend>rclcpp</depend>
   <depend>hri</depend>
+  <depend>hri_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>rviz_common</depend>
+  <depend>rviz_default_plugins</depend>
   <depend>cv_bridge</depend>
-  <depend>rviz</depend>
+  <depend>libogre-dev</depend>
 
-  <build_depend>qtbase5-dev</build_depend>
-
-  <exec_depend>libqt5-core</exec_depend>
-  <exec_depend>libqt5-gui</exec_depend>
-  <exec_depend>libqt5-widgets</exec_depend>
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
 
   <export>
-      <rviz plugin="${prefix}/plugin_description.xml"/>
+    <build_type>ament_cmake</build_type>
   </export>
-
 </package>
