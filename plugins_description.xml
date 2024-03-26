@@ -1,4 +1,11 @@
 <library path="hri_rviz">
+  <class name="hri_rviz/Skeletons3D"
+         type="rviz_default_plugins::displays::SkeletonsDisplay"
+         base_class_type="rviz_common::Display">
+    <description>
+        A displayer for the kinematic models of the detected bodies
+    </description>
+  </class>
   <class name="hri_rviz/Humans"
          type="rviz_hri_plugins::HumansDisplay"
          base_class_type="rviz_common::Display">

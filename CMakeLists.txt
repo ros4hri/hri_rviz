@@ -32,6 +32,7 @@ set(CMAKE_AUTOMOC ON)
 
 set(HEADER_FILES
   include/hri_rviz/hri_humans.hpp
+  include/hri_rviz/hri_skeletons.hpp
 )
 
 foreach(header "${HEADER_FILES}")
@@ -40,6 +41,7 @@ endforeach()
 
 set(SRC_FILES
   src/hri_humans.cpp
+  src/hri_skeletons.cpp
 )
 
 add_library(${PROJECT_NAME} SHARED

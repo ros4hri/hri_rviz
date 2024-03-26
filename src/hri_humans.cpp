@@ -88,7 +88,7 @@ HumansDisplay::HumansDisplay()
 HumansDisplay::HumansDisplay(std::unique_ptr<rviz_default_plugins::displays::ROSImageTextureIface> texture):
  texture_(std::move(texture)) {
   hri_executor_ = rclcpp::executors::MultiThreadedExecutor::make_shared();
-  hri_node_ = rclcpp::Node::make_shared("hri_node");
+  hri_node_ = rclcpp::Node::make_shared("hri_node_hri_humans");
   hri_executor_->add_node(hri_node_);
   hri_listener_ = hri::HRIListener::create(hri_node_);
 
@@ -403,6 +403,7 @@ void HumansDisplay::processMessage(const sensor_msgs::msg::Image::ConstSharedPtr
 
   if (show_bodies_ || show_skeletons_) {
     auto bodies = hri_listener_->getBodies();
+    std::cout<<bodies.size()<<std::endl;
     for (auto const& body : bodies) {
       if (body.second->valid()) {  // ensure the body fields are valid
         auto body_ptr = body.second;
