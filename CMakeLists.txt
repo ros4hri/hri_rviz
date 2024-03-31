@@ -33,6 +33,9 @@ set(CMAKE_AUTOMOC ON)
 set(HEADER_FILES
   include/hri_rviz/hri_humans.hpp
   include/hri_rviz/hri_skeletons.hpp
+  include/hri_rviz/frame_info.hpp
+  include/hri_rviz/frame_selection_handler.hpp
+  include/hri_rviz/hri_tf.hpp
 )
 
 foreach(header "${HEADER_FILES}")
@@ -42,6 +45,9 @@ endforeach()
 set(SRC_FILES
   src/hri_humans.cpp
   src/hri_skeletons.cpp
+  src/frame_info.cpp
+  src/frame_selection_handler.cpp
+  src/hri_tf.cpp
 )
 
 add_library(${PROJECT_NAME} SHARED

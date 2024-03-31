@@ -403,7 +403,6 @@ void HumansDisplay::processMessage(const sensor_msgs::msg::Image::ConstSharedPtr
 
   if (show_bodies_ || show_skeletons_) {
     auto bodies = hri_listener_->getBodies();
-    std::cout<<bodies.size()<<std::endl;
     for (auto const& body : bodies) {
       if (body.second->valid()) {  // ensure the body fields are valid
         auto body_ptr = body.second;
