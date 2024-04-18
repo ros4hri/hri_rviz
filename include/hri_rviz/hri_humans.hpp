@@ -1,5 +1,5 @@
-// Copyright 2021 PAL Robotics S.L.
 // Copyright 2012, Willow Garage, Inc.
+// Copyright 2024, PAL Robotics, S.L.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:

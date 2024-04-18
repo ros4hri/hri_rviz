@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2012, Willow Garage, Inc.
  * Copyright (c) 2018, Bosch Software Innovations, GmbH.
+ * Copyright (c) 2024, PAL Robotics, S.L.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -232,7 +233,6 @@ void TFHRIDisplay::clear()
 {
   tree_category_->removeChildren();
 
-  // Clear the frames category, except for the "All enabled" property, which is first.
   frames_category_->removeChildren(1);
 
   hri_tools::S_FrameInfo to_delete;
