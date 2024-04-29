@@ -36,9 +36,9 @@
 
 #include <QObject>
 
-#include <OGRE/OgreMaterial.h>
-#include <OGRE/OgreRenderTargetListener.h>
-#include <OGRE/OgreSharedPtr.h>
+#include <OgreMaterial.h>
+#include <OgreRenderTargetListener.h>
+#include <OgreSharedPtr.h>
 
 #include <cv_bridge/cv_bridge.h>
 

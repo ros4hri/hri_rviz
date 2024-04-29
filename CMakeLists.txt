@@ -18,6 +18,7 @@ find_package(pluginlib REQUIRED)
 
 find_package(rviz_common REQUIRED)
 find_package(rviz_default_plugins REQUIRED)
+find_package(rviz_ogre_vendor REQUIRED)
 
 find_package(hri REQUIRED)
 find_package(hri_msgs REQUIRED)
@@ -76,6 +77,7 @@ ament_target_dependencies(${PROJECT_NAME}
   hri_msgs
   sensor_msgs
   rviz_common
+  rviz_ogre_vendor
   rviz_default_plugins
   cv_bridge
 )
