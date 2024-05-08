@@ -5,7 +5,7 @@
   <version>1.9.9</version>
   <description>Set of rviz plugins for ROS4HRI data visualization</description>
   <author email="lorenzo.ferrini@pal-robotics.com">Lorenzo Ferrini</author>
-  <license>Apache 2.0 License</license>
+  <license>Apache License 2.0</license>
   <maintainer email="lorenzo.ferrini@pal-robotics.com">Lorenzo Ferrini</maintainer>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
