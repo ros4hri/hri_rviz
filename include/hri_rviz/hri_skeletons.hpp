@@ -167,7 +167,6 @@ protected:
 class Human: public robot::Robot{
   std::string description_;
   bool initialized_;
-  std::shared_future<std::vector<rclcpp::Parameter>> parameters_;
   std::string id_; // debug
 public:
   Human(Ogre::SceneNode * root_node,
@@ -180,28 +179,17 @@ public:
         id_(id)
         {}
 
-  void setParameters(std::shared_future<std::vector<rclcpp::Parameter>> parameters){
-    parameters_ = parameters;
-  }
-
-  void setDescription(){
-    std::future_status status;
-    status = parameters_.wait_for(std::chrono::milliseconds(10));
-
-    if(status != std::future_status::ready)
-      return;
-
-    auto human_body_params_instance = parameters_.get();
-    description_ = human_body_params_instance[0].as_string();
-    initialized_ = true;
+  void setDescription(const std::string & description){
+    description_ =  description;
+    if (description_.empty()) {
+      initialized_ = false;
+    } else {
+      initialized_ = true;
+    }
   }
 
   bool initialized() const {
     return initialized_;
-  }
-
-  bool valid() const {
-    return parameters_.valid();
   }
 
   std::string description() const {

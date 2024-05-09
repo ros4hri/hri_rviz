@@ -183,15 +183,17 @@ void SkeletonsDisplay::load_urdf(HumanPtr& human){
     return;
   }
 
+  /*
   if (!human->valid()){
     std::vector<std::string> parameter_name = {std::string("")+HUMAN_MODEL_PREFIX+human->id()};
     auto human_body_param = apc_->get_parameters(parameter_name);
     human->setParameters(human_body_param);
-  }
+  }*/
 
   // check if initialized!!!
-  if (!human->initialized())
-    human->setDescription();
+  if (!human->initialized()){
+    // human->setDescription();
+  }
   if (human->initialized())
     display_urdf_content(human);
 }
@@ -255,10 +257,13 @@ void SkeletonsDisplay::updateBodies(){
       auto body_id = body.first;
       auto body_ptr = body.second;
       auto human_it = humans_.find(body_id);
-      if (human_it == humans_.end()){
+      auto body_description = body_ptr->bodyDescription();
+      if ((human_it == humans_.end()) && body_description && !((*body_description).empty())){
         auto insert_res = humans_.insert(std::pair<std::string, HumanPtr>(body_id, std::make_unique<Human>(scene_node_, context_, "body_" + body_id, this, body_id)));
-        if (insert_res.second)
+        if (insert_res.second){
+          insert_res.first->second->setDescription(*body_ptr->bodyDescription());
           load_urdf(insert_res.first->second);
+        }
       }
     }
   }
