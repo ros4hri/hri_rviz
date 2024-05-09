@@ -59,17 +59,22 @@
 #include <rclcpp/rclcpp.hpp>
 #endif
 
-namespace Ogre {
-  class SceneNode;
-  class Rectangle2D;
+namespace Ogre
+{
+class SceneNode;
+class Rectangle2D;
 }  // namespace Ogre
 
-namespace rviz_hri_plugins {
+namespace rviz_hri_plugins
+{
 class HumansDisplay : public
-  rviz_default_plugins::displays::ImageTransportDisplay<sensor_msgs::msg::Image> {
+  rviz_default_plugins::displays::ImageTransportDisplay<sensor_msgs::msg::Image>
+{
   Q_OBJECT
- public:
-  explicit HumansDisplay(std::unique_ptr<rviz_default_plugins::displays::ROSImageTextureIface> texture);
+
+public:
+  explicit HumansDisplay(
+    std::unique_ptr<rviz_default_plugins::displays::ROSImageTextureIface> texture);
   HumansDisplay();
   ~HumansDisplay() override;
 
@@ -78,25 +83,27 @@ class HumansDisplay : public
   void update(float wall_dt, float ros_dt) override;
   void reset() override;
 
- public Q_SLOTS:
+public Q_SLOTS:
   virtual void updateNormalizeOptions();
   void updateShowFaces();
   void updateShowBodies();
   void updateShowFacialLandmarks();
-  void updateShowSkeletons();   
+  void updateShowSkeletons();
 
- protected:
+protected:
   // overrides from Display
   void onEnable() override;
   void onDisable() override;
 
   // skeleton drawing function
-  void drawSkeleton(std::string id, int width, int height, std::map<hri::SkeletalKeypoint, hri::PointOfInterest>& skeleton);
+  void drawSkeleton(
+    std::string id, int width, int height, std::map<hri::SkeletalKeypoint,
+    hri::PointOfInterest> & skeleton);
 
   /* This is called by incomingMessage(). */
   void processMessage(const sensor_msgs::msg::Image::ConstSharedPtr msg);
 
- private:
+private:
   void setupScreenRectangle();
   void setupRenderPanel();
 
@@ -109,14 +116,14 @@ class HumansDisplay : public
 
   std::unique_ptr<rviz_common::RenderPanel> render_panel_;
 
-  rviz_common::properties::BoolProperty* normalize_property_;
-  rviz_common::properties::BoolProperty* show_faces_property_;
-  rviz_common::properties::BoolProperty* show_facial_landmarks_property_;
-  rviz_common::properties::BoolProperty* show_bodies_property_;
-  rviz_common::properties::BoolProperty* show_skeletons_property_;
-  rviz_common::properties::FloatProperty* min_property_;
-  rviz_common::properties::FloatProperty* max_property_;
-  rviz_common::properties::IntProperty* median_buffer_size_property_;
+  rviz_common::properties::BoolProperty * normalize_property_;
+  rviz_common::properties::BoolProperty * show_faces_property_;
+  rviz_common::properties::BoolProperty * show_facial_landmarks_property_;
+  rviz_common::properties::BoolProperty * show_bodies_property_;
+  rviz_common::properties::BoolProperty * show_skeletons_property_;
+  rviz_common::properties::FloatProperty * min_property_;
+  rviz_common::properties::FloatProperty * max_property_;
+  rviz_common::properties::IntProperty * median_buffer_size_property_;
 
   bool got_float_image_;
   bool show_faces_;

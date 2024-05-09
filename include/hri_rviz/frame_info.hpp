@@ -58,7 +58,8 @@ namespace displays
 {
 class TFHRIDisplay;
 
-namespace hri_tools{
+namespace hri_tools
+{
 /** @brief Internal class needed only by TFHRIDisplay. */
 class FrameInfo : public QObject
 {

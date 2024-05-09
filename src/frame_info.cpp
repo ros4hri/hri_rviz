@@ -47,7 +47,8 @@ namespace rviz_default_plugins
 {
 namespace displays
 {
-namespace hri_tools{
+namespace hri_tools
+{
 FrameInfo::FrameInfo(TFHRIDisplay * display)
 : display_(display),
   axes_(nullptr),

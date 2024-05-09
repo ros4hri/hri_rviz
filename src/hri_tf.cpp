@@ -88,12 +88,12 @@ namespace displays
 TFHRIDisplay::TFHRIDisplay()
 : update_timer_(0.0f),
   changing_single_frame_enabled_state_(false),
-  transformer_guard_(
-    std::make_unique<rviz_default_plugins::transformation::TransformerGuard<
-      rviz_default_plugins::transformation::TFFrameTransformer>>(this, "TF")),
   show_faces_(true),
   show_gazes_(true),
-  show_bodies_(true)
+  show_bodies_(true),
+  transformer_guard_(
+    std::make_unique<rviz_default_plugins::transformation::TransformerGuard<
+      rviz_default_plugins::transformation::TFFrameTransformer>>(this, "TF"))
 {
   show_names_property_ = new BoolProperty(
     "Show Names",
@@ -346,33 +346,35 @@ void TFHRIDisplay::updateFrames()
   frames = context_->getFrameManager()->getAllFrameNames();
   auto faces = hri_listener_->getFaces();
   auto bodies = hri_listener_->getBodies();
-  if (show_faces_ || show_gazes_ || show_bodies_){
-    for (auto& frame: frames){
-      if (show_faces_){
-        if (startsWith(frame, std::string("face_"))){
-          for (auto& face: faces){
-            if (face.second->valid() && hasId(frame, face.first)){
+  if (show_faces_ || show_gazes_ || show_bodies_) {
+    for (auto & frame: frames) {
+      if (show_faces_) {
+        if (startsWith(frame, std::string("face_"))) {
+          for (auto & face: faces) {
+            if (face.second->valid() && hasId(frame, face.first)) {
               accepted_frames.push_back(frame);
               break;
             }
           }
           continue;
         }
-      }if (show_gazes_){
-        if (startsWith(frame, std::string("gaze_"))){
-          for (auto& face: faces){
-            if (face.second->valid() && hasId(frame, face.first)){
+      }
+      if (show_gazes_) {
+        if (startsWith(frame, std::string("gaze_"))) {
+          for (auto & face: faces) {
+            if (face.second->valid() && hasId(frame, face.first)) {
               accepted_frames.push_back(frame);
               break;
             }
           }
           continue;
         }
-      }if (show_bodies_){
-        for (auto& skeleton_component: skeleton_components){
-          if (startsWith(frame, skeleton_component)){
-            for (auto& body: bodies){
-              if (body.second->valid() && hasId(frame, body.first)){
+      }
+      if (show_bodies_) {
+        for (auto & skeleton_component: skeleton_components) {
+          if (startsWith(frame, skeleton_component)) {
+            for (auto & body: bodies) {
+              if (body.second->valid() && hasId(frame, body.first)) {
                 accepted_frames.push_back(frame);
                 break;
               }
@@ -383,7 +385,7 @@ void TFHRIDisplay::updateFrames()
       }
     }
   }
-  
+
   std::sort(accepted_frames.begin(), accepted_frames.end());
 
   hri_tools::S_FrameInfo current_frames = createOrUpdateFrames(accepted_frames);
@@ -446,7 +448,9 @@ hri_tools::FrameInfo * TFHRIDisplay::createFrame(const std::string & frame)
   info->axes_ = new Axes(scene_manager_, axes_node_, 0.2f, 0.02f);
   info->axes_->getSceneNode()->setVisible(show_axes_property_->getBool());
   info->selection_handler_ =
-    rviz_common::interaction::createSelectionHandler<hri_tools::FrameSelectionHandler>(info, this, context_);
+    rviz_common::interaction::createSelectionHandler<hri_tools::FrameSelectionHandler>(
+    info, this,
+    context_);
   info->selection_handler_->addTrackedObjects(info->axes_->getSceneNode());
 
   info->name_text_ = new MovableText(frame, "Liberation Sans", 0.1f);

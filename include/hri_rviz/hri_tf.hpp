@@ -89,35 +89,19 @@ namespace rviz_default_plugins
 namespace displays
 {
 
-namespace hri_tools{
+namespace hri_tools
+{
 class FrameInfo;
 class FrameSelectionHandler;
 typedef std::set<hri_tools::FrameInfo *> S_FrameInfo;
 typedef std::shared_ptr<FrameSelectionHandler> FrameSelectionHandlerPtr;
 }
 
-static bool startsWith(const std::string& a, const std::string& b){
-  // Checks whether a starts with b or not
-  if (a.size() < b.size())
-    return false;
-  auto partial_a = a.substr(0, b.size());
-  return partial_a == b;
-}
-
-static bool hasId(const std::string& a, const std::string& b){
-  if (a.size() < b.size())
-    return false;
-  if (a.size() < 5)
-    return false;
-  std::string id = a.substr(a.size()-5, 5);
-  return id == b;
-}
-
-static std::vector<std::string> skeleton_components = {"body", "head", "torso", "waist", "p_head", 
-                                                       "y_head", "l_ankle", "l_elbow", "l_hip", "l_knee", 
-                                                       "l_p_hip", "l_p_shoulder", "l_shoulder", "l_wrist", "l_y_hip",
-                                                       "l_y_shoulder", "r_ankle", "r_elbow", "r_hip", "r_knee", 
-                                                       "r_p_hip", "r_p_shoulder", "r_shoulder", "r_wrist", "r_y_hip", "r_y_shoulder"};
+static std::vector<std::string> skeleton_components = {"body", "head", "torso", "waist", "p_head",
+  "y_head", "l_ankle", "l_elbow", "l_hip", "l_knee",
+  "l_p_hip", "l_p_shoulder", "l_shoulder", "l_wrist", "l_y_hip",
+  "l_y_shoulder", "r_ankle", "r_elbow", "r_hip", "r_knee",
+  "r_p_hip", "r_p_shoulder", "r_shoulder", "r_wrist", "r_y_hip", "r_y_shoulder"};
 
 /** @brief Displays a visual representation of the TF hierarchy. */
 class RVIZ_DEFAULT_PLUGINS_PUBLIC TFHRIDisplay : public rviz_common::Display
@@ -156,6 +140,28 @@ private:
 
   void onEnable() override;
   void onDisable() override;
+
+  static bool startsWith(const std::string & a, const std::string & b)
+  {
+    // Checks whether a starts with b or not
+    if (a.size() < b.size()) {
+      return false;
+    }
+    auto partial_a = a.substr(0, b.size());
+    return partial_a == b;
+  }
+
+  static bool hasId(const std::string & a, const std::string & b)
+  {
+    if (a.size() < b.size()) {
+      return false;
+    }
+    if (a.size() < 5) {
+      return false;
+    }
+    std::string id = a.substr(a.size() - 5, 5);
+    return id == b;
+  }
 
   Ogre::SceneNode * root_node_;
   Ogre::SceneNode * names_node_;
@@ -201,7 +207,9 @@ private:
     const std::string & child_frame,
     const std::string & message = "") const;
 
-  void updateParentArrowIfTransformExists(hri_tools::FrameInfo * frame, const Ogre::Vector3 & position) const;
+  void updateParentArrowIfTransformExists(
+    hri_tools::FrameInfo * frame,
+    const Ogre::Vector3 & position) const;
 
   bool hasNoTreePropertyOrParentChanged(
     const hri_tools::FrameInfo * frame, const std::string & old_parent) const;

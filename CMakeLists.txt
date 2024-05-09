@@ -35,7 +35,6 @@ set(HEADER_FILES
   include/hri_rviz/hri_humans.hpp
   include/hri_rviz/hri_skeletons.hpp
   include/hri_rviz/frame_info.hpp
-  include/hri_rviz/frame_selection_handler.hpp
   include/hri_rviz/hri_tf.hpp
 )
 

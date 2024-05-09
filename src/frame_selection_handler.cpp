@@ -53,7 +53,8 @@ namespace rviz_default_plugins
 {
 namespace displays
 {
-namespace hri_tools{
+namespace hri_tools
+{
 FrameSelectionHandler::FrameSelectionHandler(
   FrameInfo * frame,
   TFHRIDisplay * display,

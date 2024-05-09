@@ -59,7 +59,8 @@ namespace displays
 {
 
 class TFHRIDisplay;
-namespace hri_tools{
+namespace hri_tools
+{
 
 class RVIZ_DEFAULT_PLUGINS_PUBLIC FrameSelectionHandler : public
   rviz_common::interaction::SelectionHandler
@@ -104,7 +105,7 @@ private:
   rviz_common::interaction::createSelectionHandler(Args ... arguments);
 };
 
-}  // namespace hri_tools 
+}  // namespace hri_tools
 
 }  // namespace displays
 

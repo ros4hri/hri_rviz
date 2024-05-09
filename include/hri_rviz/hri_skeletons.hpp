@@ -127,9 +127,9 @@ private Q_SLOTS:
   void updateInertiaVisible();
 
 protected:
-  virtual void load_urdf(HumanPtr& human);
-  void display_urdf_content(HumanPtr& human);
-  void updateRobot(HumanPtr& human);
+  virtual void load_urdf(HumanPtr & human);
+  void display_urdf_content(HumanPtr & human);
+  void updateRobot(HumanPtr & human);
   void updateBodies();
 
   // overrides from Display
@@ -160,27 +160,29 @@ protected:
   rclcpp::Node::SharedPtr hri_node_;
   rclcpp::Node::SharedPtr async_client_node_;
   std::shared_ptr<hri::HRIListener> hri_listener_;
-
-  std::shared_ptr<rclcpp::AsyncParametersClient> apc_;
 };
 
-class Human: public robot::Robot{
+class Human : public robot::Robot
+{
   std::string description_;
   bool initialized_;
   std::string id_; // debug
-public:
-  Human(Ogre::SceneNode * root_node,
-        rviz_common::DisplayContext * context,
-        const std::string & name,
-        rviz_common::properties::Property * parent_property,
-        std::string id):
-        robot::Robot(root_node, context, name, parent_property),
-        initialized_(false),
-        id_(id)
-        {}
 
-  void setDescription(const std::string & description){
-    description_ =  description;
+public:
+  Human(
+    Ogre::SceneNode * root_node,
+    rviz_common::DisplayContext * context,
+    const std::string & name,
+    rviz_common::properties::Property * parent_property,
+    std::string id)
+  : robot::Robot(root_node, context, name, parent_property),
+    initialized_(false),
+    id_(id)
+  {}
+
+  void setDescription(const std::string & description)
+  {
+    description_ = description;
     if (description_.empty()) {
       initialized_ = false;
     } else {
@@ -188,24 +190,29 @@ public:
     }
   }
 
-  bool initialized() const {
+  bool initialized() const
+  {
     return initialized_;
   }
 
-  std::string description() const {
+  std::string description() const
+  {
     return description_;
   }
 
-  std::string id() const {
+  std::string id() const
+  {
     return id_;
   }
 
-  void hideLinks(){
+  void hideLinks()
+  {
     this->link_tree_->hide();
   }
 
   // debug
-  void disableLinkStatus(SkeletonsDisplay * display) const {
+  void disableLinkStatus(SkeletonsDisplay * display) const
+  {
     for (auto & link_map_entry : this->links_) {
       display->deleteStatusStd(link_map_entry.first);
     }

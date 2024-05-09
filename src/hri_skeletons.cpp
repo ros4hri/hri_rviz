@@ -86,8 +86,6 @@ SkeletonsDisplay::SkeletonsDisplay()
   hri_executor_->add_node(async_client_node_);
   hri_listener_ = hri::HRIListener::create(hri_node_);
 
-  apc_ = std::make_shared<rclcpp::AsyncParametersClient>(async_client_node_, "/fullbody_detect");
-
   visual_enabled_property_ = new Property(
     "Visual Enabled", true,
     "Whether to display the visual representation of the robot.",
@@ -139,22 +137,25 @@ void SkeletonsDisplay::onInitialize()
 
 void SkeletonsDisplay::updateAlpha()
 {
-  for (auto& human: humans_)
+  for (auto & human: humans_) {
     human.second->setAlpha(alpha_property_->getFloat());
+  }
   context_->queueRender();
 }
 
 void SkeletonsDisplay::updateVisualVisible()
 {
-  for (auto& human: humans_)
+  for (auto & human: humans_) {
     human.second->setVisualVisible(visual_enabled_property_->getValue().toBool());
+  }
   context_->queueRender();
 }
 
 void SkeletonsDisplay::updateCollisionVisible()
 {
-  for (auto& human: humans_)
+  for (auto & human: humans_) {
     human.second->setCollisionVisible(collision_enabled_property_->getValue().toBool());
+  }
   context_->queueRender();
 }
 
@@ -166,48 +167,45 @@ void SkeletonsDisplay::updateTfPrefix()
 
 void SkeletonsDisplay::updateMassVisible()
 {
-  for (auto& human: humans_)
+  for (auto & human: humans_) {
     human.second->setMassVisible(mass_enabled_property_->getValue().toBool());
+  }
   context_->queueRender();
 }
 
 void SkeletonsDisplay::updateInertiaVisible()
 {
-  for (auto& human: humans_)
+  for (auto & human: humans_) {
     human.second->setInertiaVisible(inertia_enabled_property_->getValue().toBool());
+  }
   context_->queueRender();
 }
 
-void SkeletonsDisplay::load_urdf(HumanPtr& human){
+void SkeletonsDisplay::load_urdf(HumanPtr & human)
+{
   if (!transformer_guard_->checkTransformer()) {
     return;
   }
-
-  /*
-  if (!human->valid()){
-    std::vector<std::string> parameter_name = {std::string("")+HUMAN_MODEL_PREFIX+human->id()};
-    auto human_body_param = apc_->get_parameters(parameter_name);
-    human->setParameters(human_body_param);
-  }*/
-
-  // check if initialized!!!
-  if (!human->initialized()){
-    // human->setDescription();
+  if (!human->initialized()) {
+    return;
   }
-  if (human->initialized())
+  if (human->initialized()) {
     display_urdf_content(human);
+  }
 }
 
-void SkeletonsDisplay::display_urdf_content(HumanPtr& human)
+void SkeletonsDisplay::display_urdf_content(HumanPtr & human)
 {
   urdf::Model descr;
   if (!descr.initString(human->description())) {
     clear();
-    setStatus(StatusProperty::Error, QString::fromStdString("URDF "+human->id()), "URDF failed Model parse");
+    setStatus(
+      StatusProperty::Error, QString::fromStdString(
+        "URDF " + human->id()), "URDF failed Model parse");
     return;
   }
 
-  setStatus(StatusProperty::Ok, QString::fromStdString("URDF "+human->id()), "URDF parsed OK");
+  setStatus(StatusProperty::Ok, QString::fromStdString("URDF " + human->id()), "URDF parsed OK");
   human->load(descr);
   std::stringstream ss;
   for (const auto & name_link_pair : human->getLinks()) {
@@ -224,7 +222,7 @@ void SkeletonsDisplay::display_urdf_content(HumanPtr& human)
   updateRobot(human);
 }
 
-void SkeletonsDisplay::updateRobot(HumanPtr& human)
+void SkeletonsDisplay::updateRobot(HumanPtr & human)
 {
   human->update(
     robot::TFLinkUpdater(
@@ -235,8 +233,8 @@ void SkeletonsDisplay::updateRobot(HumanPtr& human)
 
 void SkeletonsDisplay::onEnable()
 {
-  for (auto& human: humans_){
-    load_urdf(human.second); // load_urdf(human.first);
+  for (auto & human: humans_) {
+    load_urdf(human.second);
     human.second->setVisible(true);
   }
 }
@@ -244,23 +242,28 @@ void SkeletonsDisplay::onEnable()
 void SkeletonsDisplay::onDisable()
 {
   Display::onDisable();
-  for (auto& human: humans_)
+  for (auto & human: humans_) {
     human.second->setVisible(false);
+  }
   clear();
 }
 
-void SkeletonsDisplay::updateBodies(){
+void SkeletonsDisplay::updateBodies()
+{
   auto bodies = hri_listener_->getBodies();
   // Add the newly detected bodies
-  for (auto& body: bodies){
-    if (body.second->valid()){
+  for (auto & body: bodies) {
+    if (body.second->valid()) {
       auto body_id = body.first;
       auto body_ptr = body.second;
       auto human_it = humans_.find(body_id);
       auto body_description = body_ptr->bodyDescription();
-      if ((human_it == humans_.end()) && body_description && !((*body_description).empty())){
-        auto insert_res = humans_.insert(std::pair<std::string, HumanPtr>(body_id, std::make_unique<Human>(scene_node_, context_, "body_" + body_id, this, body_id)));
-        if (insert_res.second){
+      if ((human_it == humans_.end()) && body_description && !((*body_description).empty())) {
+        auto insert_res = humans_.insert(
+          std::pair<std::string, HumanPtr>(
+            body_id, std::make_unique<Human>(
+              scene_node_, context_, "body_" + body_id, this, body_id)));
+        if (insert_res.second) {
           insert_res.first->second->setDescription(*body_ptr->bodyDescription());
           load_urdf(insert_res.first->second);
         }
@@ -269,18 +272,18 @@ void SkeletonsDisplay::updateBodies(){
   }
   // Remove the currently-not-detected bodies
   std::vector<std::string> bodies_to_remove;
-  for (auto& human: humans_){
+  for (auto & human: humans_) {
     auto body_it = bodies.find(human.first);
-    if (body_it == bodies.end()){
+    if (body_it == bodies.end()) {
       bodies_to_remove.push_back(human.first);
       human.second->hideLinks();
       human.second->disableLinkStatus(this);
-      deleteStatusStd("URDF "+human.second->id());
-    }else if(!human.second->initialized()){
+      deleteStatusStd("URDF " + human.second->id());
+    } else if (!human.second->initialized()) {
       load_urdf(human.second);
     }
   }
-  for (auto& body_to_remove: bodies_to_remove){
+  for (auto & body_to_remove: bodies_to_remove) {
     humans_.erase(body_to_remove);
   }
 }
@@ -301,8 +304,9 @@ void SkeletonsDisplay::update(float wall_dt, float ros_dt)
   bool update = rate < 0.0001f || time_since_last_transform_ >= rate * 1000000000;
 
   if (has_new_transforms_ || update) {
-    for (auto& human: humans_)
+    for (auto & human: humans_) {
       updateRobot(human.second);
+    }
     context_->queueRender();
 
     has_new_transforms_ = false;
@@ -317,8 +321,9 @@ void SkeletonsDisplay::fixedFrameChanged()
 
 void SkeletonsDisplay::clear()
 {
-  for (auto& human: humans_)
+  for (auto & human: humans_) {
     human.second->clear();
+  }
   clearStatuses();
 }
 
