@@ -2,8 +2,8 @@
 Changelog for package hri_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+2.0.0 (2024-05-21)
+------------------
 * re-import CHANGELOG from ROS1
 * general cleanup
   linting code + fixing wrong dependencies in package.xml
