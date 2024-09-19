@@ -135,11 +135,17 @@ HumansDisplay::HumansDisplay(
     "Show 2D Skeletons", true, "If set to true, show 2D skeletons.",
     this, SLOT(updateShowSkeletons()));
 
+  show_facial_expressions_property_ = new BoolProperty(
+    "Show facial expressions", true,
+    "If set to true, show the facial expression classification above the bounding box",
+    this, SLOT(updateShowFacialExpressions()));
+
   show_faces_ = true;
   show_facial_landmarks_ = true;
   show_bodies_ = true;
   show_skeletons_ = true;
   got_float_image_ = false;
+  show_facial_expressions_ = true;
 }
 
 void HumansDisplay::onInitialize()
@@ -188,6 +194,11 @@ void HumansDisplay::updateShowBodies()
 void HumansDisplay::updateShowSkeletons()
 {
   show_skeletons_ = show_skeletons_property_->getBool();
+}
+
+void HumansDisplay::updateShowFacialExpressions()
+{
+  show_facial_expressions_ = show_facial_expressions_property_->getBool();
 }
 
 void HumansDisplay::updateNormalizeOptions()
@@ -257,6 +268,38 @@ void HumansDisplay::reset()
 {
   ITDClass::reset();
   clear();
+}
+
+std::string HumansDisplay::expressionToString(hri::Expression expression)
+{
+  switch (expression) {
+    case hri::Expression::kNeutral: return "Neutral";
+    case hri::Expression::kAngry: return "Angry";
+    case hri::Expression::kSad: return "Sad";
+    case hri::Expression::kHappy: return "Happy";
+    case hri::Expression::kSurprised: return "Surprised";
+    case hri::Expression::kDisgusted: return "Disgusted";
+    case hri::Expression::kScared: return "Scared";
+    case hri::Expression::kPleading: return "Pleading";
+    case hri::Expression::kVulnerable: return "Vulnerable";
+    case hri::Expression::kDespaired: return "Despaired";
+    case hri::Expression::kGuilty: return "Guilty";
+    case hri::Expression::kDisappointed: return "Disappointed";
+    case hri::Expression::kEmbarrassed: return "Embarrassed";
+    case hri::Expression::kHorrified: return "Horrified";
+    case hri::Expression::kSkeptical: return "Skeptical";
+    case hri::Expression::kAnnoyed: return "Annoyed";
+    case hri::Expression::kFurious: return "Furious";
+    case hri::Expression::kSuspicious: return "Suspicious";
+    case hri::Expression::kRejected: return "Rejected";
+    case hri::Expression::kBored: return "Bored";
+    case hri::Expression::kTired: return "Tired";
+    case hri::Expression::kAsleep: return "Asleep";
+    case hri::Expression::kConfused: return "Confused";
+    case hri::Expression::kAmazed: return "Amazed";
+    case hri::Expression::kExcited: return "Excited";
+    default: return "";
+  }
 }
 
 void HumansDisplay::drawSkeleton(
@@ -482,11 +525,12 @@ void HumansDisplay::processMessage(const sensor_msgs::msg::Image::ConstSharedPtr
 
   cvBridge_ = cv_bridge::toCvCopy(msg);
 
-  if (show_faces_ || show_facial_landmarks_) {
+  if (show_faces_ || show_facial_landmarks_ || show_facial_expressions_) {
     auto faces = hri_listener_->getFaces();
     for (auto const & face : faces) {
-      if (face.second->valid()) {  // ensure the face fields are valid
+      if (face.second->valid()) {    // Ensure the face fields are valid
         auto face_ptr = face.second;
+
         if (show_faces_) {
           auto roi = face_ptr->roi();
           cv::Point roi_tl(static_cast<int>(roi->x * msg->width),
@@ -504,8 +548,61 @@ void HumansDisplay::processMessage(const sensor_msgs::msg::Image::ConstSharedPtr
                 cv::Point(
                   static_cast<int>(landmark.second.x * msg->width),
                   static_cast<int>(landmark.second.y * msg->height)),
-                5,
-                get_color_from_id(face.first), cv::FILLED);
+                5, get_color_from_id(face.first), cv::FILLED);
+            }
+          }
+        }
+
+        if (show_facial_expressions_) {
+          if (face_ptr->expression().has_value()) {
+            std::string expression = expressionToString(face_ptr->expression().value());
+            if (!expression.empty()) {
+              auto roi = face_ptr->roi();
+              int text_x = static_cast<int>(roi->x * msg->width);
+              int text_y = static_cast<int>((roi->y - 0.05) * msg->height);
+              int text_width =
+                cv::getTextSize(expression, cv::FONT_HERSHEY_SIMPLEX, 1.0, 2, nullptr).width;
+              int text_height = cv::getTextSize(
+                expression, cv::FONT_HERSHEY_SIMPLEX, 1.0, 2,
+                nullptr).height;
+              // Check if the text goes out of the frame at the top
+              if (text_y < 0) {
+                // Position the text below the bounding box instead
+                text_y = static_cast<int>((roi->y + roi->height + 0.05) * msg->height);
+
+                // Check if the text goes out of the frame at the bottom
+                if (text_y + text_height > static_cast<int>(msg->height)) {
+                  // Text doesn't fit above or below, so don't display it
+                  return;
+                }
+              } else {
+                // Check if the text goes out of the frame at the bottom when positioned above
+                if (text_y + text_height > static_cast<int>(msg->height)) {
+                  // Position the text below the bounding box instead
+                  text_y = static_cast<int>((roi->y + roi->height + 0.05) * msg->height);
+
+                  if (text_y + text_height > static_cast<int>(msg->height)) {
+                    return;
+                  }
+                }
+              }
+
+              // Ensure the text does not go out of the frame on the left side
+              if (text_x < 0) {
+                text_x = 0; // Set x to 0 to ensure the text stays within the frame
+              }
+
+              // Ensure the text does not go out of the frame on the right side
+              if (text_x + text_width > static_cast<int>(msg->width)) {
+                text_x = msg->width - text_width; // Adjust x to keep text within the right boundary
+              }
+              if (text_x < 0) {
+                text_x = 0;
+              }
+
+              cv::putText(
+                cvBridge_->image, expression, cv::Point(text_x, text_y),
+                cv::FONT_HERSHEY_SIMPLEX, 1.0, get_color_from_id(face.first), 2);
             }
           }
         }

@@ -89,6 +89,8 @@ public Q_SLOTS:
   void updateShowBodies();
   void updateShowFacialLandmarks();
   void updateShowSkeletons();
+  void updateShowFacialExpressions();
+  std::string expressionToString(hri::Expression expression);
 
 protected:
   // overrides from Display
@@ -124,12 +126,14 @@ private:
   rviz_common::properties::FloatProperty * min_property_;
   rviz_common::properties::FloatProperty * max_property_;
   rviz_common::properties::IntProperty * median_buffer_size_property_;
+  rviz_common::properties::BoolProperty * show_facial_expressions_property_;
 
   bool got_float_image_;
   bool show_faces_;
   bool show_facial_landmarks_;
   bool show_bodies_;
   bool show_skeletons_;
+  bool show_facial_expressions_;
 
   cv_bridge::CvImagePtr cvBridge_;
 
