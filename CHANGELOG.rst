@@ -2,6 +2,11 @@
 Changelog for package hri_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* display expression when available
+* Contributors: saracooper
+
 2.0.0 (2024-05-21)
 ------------------
 * re-import CHANGELOG from ROS1
