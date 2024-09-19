@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>hri_rviz</name>
-  <version>2.0.0</version>
+  <version>2.1.0</version>
   <description>Set of rviz plugins for ROS4HRI data visualization</description>
   <maintainer email="lorenzo.ferrini@pal-robotics.com">Lorenzo Ferrini</maintainer>
   <license>Apache License 2.0</license>
