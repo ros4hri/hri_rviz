@@ -40,7 +40,12 @@
 #include <OgreRenderTargetListener.h>
 #include <OgreSharedPtr.h>
 
-#include <cv_bridge/cv_bridge.h>
+// jazzy only exposes cv_bridge.hpp, and humble only has cv_bridge.h
+#if __has_include("cv_bridge/cv_bridge.hpp")
+#include "cv_bridge/cv_bridge.hpp"
+#else
+#include "cv_bridge/cv_bridge.h"
+#endif
 
 #include <hri_msgs/msg/ids_list.hpp>
 #include <hri_msgs/msg/normalized_point_of_interest2_d.hpp>
