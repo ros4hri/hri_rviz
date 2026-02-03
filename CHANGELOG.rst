@@ -2,8 +2,8 @@
 Changelog for package hri_rviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+2.3.0 (2026-02-03)
+------------------
 * compat jazzy
 * Contributors: Séverin Lemaignan
 
